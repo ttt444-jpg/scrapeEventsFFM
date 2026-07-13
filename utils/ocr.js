@@ -13,7 +13,3 @@ export async function ocrFromUrl(imageUrl) {
 
   return text;
 }
-
-// Test
-// ocrFromUrl("https://loveyourartist.imgix.net/public/49ac3a92-bea8-43ff-9d17-02c3d7945fdd/1783119326358/bildschirmfoto-2026-07-04-um-005125.png")
-//   .then(console.log);

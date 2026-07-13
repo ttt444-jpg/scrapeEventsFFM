@@ -11,7 +11,7 @@ app.get("/", (req, res) => {
         <li>
           <a href="${site.url}" target="_blank"><h2>${site.site}</h2></a>
           <ul>
-            ${site.events.map(ev => `
+            ${site.events.slice(0, 10).map(ev => `
               <li>
                 <a href="${ev.link}" target="_blank">
                   <strong>${ev.date}</strong> – ${ev.title}

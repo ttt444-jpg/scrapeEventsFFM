@@ -42,8 +42,9 @@ export async function scrapeKlapperfeld() {
       if (next.is("p")) descriptionParts.push(next.text().trim());
       next = next.next();
     }
-
-    const excerpt = descriptionParts[0] || "";
+  
+    let excerpt = descriptionParts[0] || "";
+    excerpt = excerpt.length > 200 ? excerpt.substring(0, 200) + "..." : excerpt;
     const fullText = descriptionParts.join("\n\n");
 
     events.push({
