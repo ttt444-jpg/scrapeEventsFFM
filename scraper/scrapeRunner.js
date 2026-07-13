@@ -1,0 +1,32 @@
+import { results } from "../data.js";
+
+import { scrapeBettClub } from "./sites/bettClub.js";
+import { scrapeBatschkapp } from "./sites/batschkapp.js";
+import { scrapeNachtleben } from "./sites/nachtleben.js";
+import { scrapeZoom } from "./sites/zoom.js";
+//import { scrapeHafen2 } from "./sites/hafen2.js"; NOT WORKING YET
+import { scrapeKlapperfeld } from "./sites/klapperfeld.js";
+import { scrapeSchonSchoen } from "./sites/schonSchoen.js";
+import { scrapeSchlachthof } from "./sites/schlachthof.js";
+// weitere Scraper hier importieren
+
+export async function runScraper() {
+  const scrapers = [
+    //scrapeBettClub,
+    scrapeBatschkapp,
+    scrapeNachtleben,
+    scrapeZoom,
+    //scrapeHafen2,
+    scrapeKlapperfeld,
+    scrapeSchonSchoen,
+    scrapeSchlachthof
+    // weitere Scraper hier eintragen
+  ];
+
+  for (const scraper of scrapers) {
+    const siteData = await scraper();
+    results.push(siteData);
+  }
+
+  console.log("Scraping abgeschlossen");
+}
