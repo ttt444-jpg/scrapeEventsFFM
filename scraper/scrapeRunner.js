@@ -8,6 +8,7 @@ import { scrapeZoom } from "./sites/zoom.js";
 import { scrapeKlapperfeld } from "./sites/klapperfeld.js";
 import { scrapeSchonSchoen } from "./sites/schonSchoen.js";
 import { scrapeSchlachthof } from "./sites/schlachthof.js";
+import { scrapeDreikoenigskeller } from "./sites/dreikoenigskeller.js";
 // weitere Scraper hier importieren
 
 export async function runScraper() {
@@ -19,7 +20,8 @@ export async function runScraper() {
     //scrapeHafen2,
     scrapeKlapperfeld,
     scrapeSchonSchoen,
-    scrapeSchlachthof
+    scrapeSchlachthof,
+    scrapeDreikoenigskeller
     // weitere Scraper hier eintragen
   ];
 
