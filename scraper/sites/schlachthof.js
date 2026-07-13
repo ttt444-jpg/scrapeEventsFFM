@@ -6,26 +6,23 @@ export async function scrapeSchlachthof() {
 
   const events = [];
 
-  $(".event-item").each((_, el) => {
-    const datecontainer = $(".sm\\:flex");
+  $("a.border-t.block.group").each((_, el) => {
+    const item = $(el);
 
-    // Wochentag
-    const weekday = datecontainer
-      .find(".uppercase.hidden.sm\\:inline")
-      .text()
-      .trim();
+    // Link
+    const link = item.attr("href");
 
-    // Tag (Zahl)
-    const day = datecontainer.find("div").eq(2).text().trim();
+    // Datum (1–2-stellige Zahl)
+    const date = item.find("div").filter((_, div) => {
+      const text = $(div).text().trim();
+      return /^\d{1,2}$/.test(text);
+    }).text().trim();
 
-    // Ergebnis
-    const date = `${weekday} ${day}`;
-    console.log("test");
-    console.log("Date:", date);
+    // Titel
+    const title = item.find("h2").text().trim();
 
-    const title = $(el).find("tracking-wider text-[25px] sm:text-[50px] xl:text-[60px] 2xl:text-[70px] 3xl:text-[80px] leading-[1.2]sm:leading-[1.15] 2xl:leading-[1.1] w-full font-headline uppercase").text().trim();
-    const excerpt = $(el).find(".eventlistitemsubheading").text().trim();
-    const link = $(el).closest("a").attr("href") || null;
+    // Beschreibung / Excerpt
+    const excerpt = item.find("div.mt\\[10px\\]").text().trim();
 
     events.push({
       date,
@@ -36,7 +33,7 @@ export async function scrapeSchlachthof() {
   });
 
   return {
-    site: "schlachthof",
+    site: "Schlachthof Wiesbaden",
     url,
     events,
   };
