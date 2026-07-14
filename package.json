@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon index.js"},
+    "start": "nodemon index.js"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -18,6 +19,7 @@
     "node-fetch": "^3.3.2",
     "ollama": "^0.6.3",
     "puppeteer": "^25.3.0",
+    "sharp": "^0.35.3",
     "tesseract-ocr": "^1.0.0",
     "tesseract.js": "^7.0.0"
   },

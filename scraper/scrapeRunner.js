@@ -9,19 +9,21 @@ import { scrapeKlapperfeld } from "./sites/klapperfeld.js";
 import { scrapeSchonSchoen } from "./sites/schonSchoen.js";
 import { scrapeSchlachthof } from "./sites/schlachthof.js";
 import { scrapeDreikoenigskeller } from "./sites/dreikoenigskeller.js";
+import { scrapeCave } from "./sites/cave.js";
 // weitere Scraper hier importieren
 
 export async function runScraper() {
   const scrapers = [
     //scrapeBettClub,
-    scrapeBatschkapp,
-    scrapeNachtleben,
+    //scrapeBatschkapp,
+    //scrapeNachtleben,
     scrapeZoom,
     //scrapeHafen2,
     scrapeKlapperfeld,
     scrapeSchonSchoen,
     scrapeSchlachthof,
-    scrapeDreikoenigskeller
+    scrapeDreikoenigskeller,
+    scrapeCave
     // weitere Scraper hier eintragen
   ];
 
