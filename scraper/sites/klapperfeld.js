@@ -3,20 +3,23 @@ import { loadPage } from "../scraperBase.js";
 export async function scrapeKlapperfeld() {
   const baseUrl = "https://www.faitesvotrejeu.org";
 
-  // 1. Hauptseite laden
-  const $main = await loadPage(baseUrl);
+  // Falscher Link auf der Website, daher funktionert das Scraping nicht mehr.
+  // // 1. Hauptseite laden
+  // const $main = await loadPage(baseUrl);
 
-  // 2. Monatsprogramm-Link aus dem Menü extrahieren
-  const monatsUrl = $main("a")
-    .filter((_, el) => $main(el).text().trim() === "Monatsprogramm")
-    .attr("href");
+  // // 2. Monatsprogramm-Link aus dem Menü extrahieren
+  // const monatsUrl = $main("a")
+  //   .filter((_, el) => $main(el).text().trim() === "Monatsprogramm")
+  //   .attr("href");
 
-  if (!monatsUrl) {
-    throw new Error("Monatsprogramm-Link nicht gefunden");
-  }
+  // if (!monatsUrl) {
+  //   throw new Error("Monatsprogramm-Link nicht gefunden");
+  // }
 
-  // 3. Monatsseite laden
-  const $ = await loadPage(monatsUrl);
+  // // 3. Monatsseite laden
+  // const $ = await loadPage(monatsUrl);
+
+  const $ = await loadPage(baseUrl + "/" + new Date().getFullYear());
 
   const events = [];
 
