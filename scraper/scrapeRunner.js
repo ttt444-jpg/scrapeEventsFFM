@@ -14,9 +14,9 @@ import { scrapeCave } from "./sites/cave.js";
 
 export async function runScraper() {
   const scrapers = [
-    //scrapeBettClub,
-    //scrapeBatschkapp,
-    //scrapeNachtleben,
+    scrapeBettClub,
+    scrapeBatschkapp,
+    scrapeNachtleben,
     scrapeZoom,
     //scrapeHafen2,
     scrapeKlapperfeld,
@@ -28,8 +28,15 @@ export async function runScraper() {
   ];
 
   for (const scraper of scrapers) {
-    const siteData = await scraper();
-    results.push(siteData);
+    try {
+      const siteData = await scraper();
+      results.push(siteData);
+    } catch (err) {
+      console.error(`Fehler beim Scrapen mit ${scraper.name || "unnamed"}:`, err && err.message ? err.message : err);
+      results.push({ site: scraper.name || null, error: err && err.message ? err.message : String(err) });
+      // weiter mit dem nächsten Scraper
+      continue;
+    }
   }
 
   console.log("Scraping abgeschlossen");
