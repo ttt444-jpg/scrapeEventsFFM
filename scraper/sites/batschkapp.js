@@ -12,7 +12,8 @@ export async function scrapeBatschkapp() {
     const excerpt = $(el).find(".eventlistitemsubheading").text().trim();
 
     // Link steht IMMER im <a> um das eventlistitem herum
-    const link = $(el).closest("a").attr("href") || null;
+    let link = $(el).closest("a").attr("href") || null;
+    link = new URL(link, url).href;
 
     events.push({
       date,

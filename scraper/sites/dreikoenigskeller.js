@@ -1,7 +1,7 @@
 import { loadPage } from "../scraperBase.js";
 
 export async function scrapeDreikoenigskeller() {
-  const url = "https://www.dreikoenigskeller.eu/";
+  const url = "https://www.dreikoenigskeller.eu";
   const $ = await loadPage(url);
 
   const events = [];
@@ -10,7 +10,9 @@ export async function scrapeDreikoenigskeller() {
     const item = $(el);
 
     // Link
-    const link = item.find("a").attr("href");
+    let link = item.find("a").attr("href");
+
+    link = new URL(link, url).href;
 
     // Datum (z.B. "Di 14.07.2026")
     const date = item.find("div.text-xl").text().trim();
