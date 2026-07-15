@@ -10,6 +10,7 @@ import { scrapeSchonSchoen } from "./sites/schonSchoen.js";
 import { scrapeSchlachthof } from "./sites/schlachthof.js";
 import { scrapeDreikoenigskeller } from "./sites/dreikoenigskeller.js";
 import { scrapeCave } from "./sites/cave.js";
+import { scrapeElferClub } from "./sites/elferClub.js"; // NOT WORKING YET
 // weitere Scraper hier importieren
 
 export async function runScraper() {
@@ -23,7 +24,8 @@ export async function runScraper() {
     scrapeSchonSchoen,
     scrapeSchlachthof,
     scrapeDreikoenigskeller,
-    scrapeCave
+    scrapeCave,
+    scrapeElferClub,
     // weitere Scraper hier eintragen
   ];
 
