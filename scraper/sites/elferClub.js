@@ -31,6 +31,7 @@ export async function scrapeElferClub() {
         date,
         title,
         link,
+        excerpt
       });
     }
   });
