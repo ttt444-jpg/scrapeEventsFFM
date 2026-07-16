@@ -15,10 +15,19 @@ export async function scrapeNachtleben() {
     let link = $(el).closest("a").attr("href") || null;
     link = new URL(link, url).href;
 
+     // Bild holen
+    const img = $(el)
+      .find(".eventlistimage-container img")
+      .attr("src") || null;
+
+    // Absolute URL bauen
+    const image = img ? new URL(img, url).href : null;
+
     events.push({
       date,
       title,
       excerpt,
+      image,
       link
     });
   });
