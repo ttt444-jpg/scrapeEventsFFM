@@ -1,20 +1,21 @@
 import { loadPage } from "../scraperBase.js";
 
 export async function scrapeDreikoenigskeller() {
-  const url = "https://www.dreikoenigskeller.eu";
-  const $ = await loadPage(url);
+  const baseUrl = "https://www.dreikoenigskeller.eu";
+  const $ = await loadPage(baseUrl);
 
   const events = [];
 
-  $("article.group").each((_, el) => {
+  const articles = $("article.group");
+
+  for (const el of articles) {
     const item = $(el);
 
     // Link
     let link = item.find("a").attr("href");
+    link = new URL(link, baseUrl).href;
 
-    link = new URL(link, url).href;
-
-    // Datum (z.B. "Di 14.07.2026")
+    // Datum
     const date = item.find("div.text-xl").text().trim();
 
     // Titel
@@ -23,17 +24,30 @@ export async function scrapeDreikoenigskeller() {
     // Excerpt
     const excerpt = item.find("p").text().trim();
 
+    // Detailseite laden
+    const detailPage = await loadPage(link);
+
+    // Erstes Bild im Artikel holen
+    let image = detailPage("article img").first().attr("src") || null;
+
+    if (image) {
+      image = new URL(image, baseUrl).href;
+    }
+
+    if (!title.toUpperCase().includes("HOFKNEIPE") && !title.toUpperCase().includes("HOFFEST"))
+    {
     events.push({
       date,
       title,
       excerpt,
       link,
+      image,
     });
-  });
+  }}
 
   return {
     site: "Dreikönigskeller",
-    url,
+    url: baseUrl,
     events,
   };
 }
