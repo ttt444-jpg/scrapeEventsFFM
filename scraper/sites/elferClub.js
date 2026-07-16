@@ -24,13 +24,20 @@ export async function scrapeElferClub() {
     // Konzert oder Party 
     const type = root.find("span[x-show=\"language === 'de'\"]").first().text().trim();
 
+    // Bild holen (data-src ist immer vorhanden)
+    let image = root.find("img[data-src]").attr("data-src") || null;
+    if (image) {
+      image = new URL(image, url).href;
+    }
+
     const excerpt = "";
 
-    if (type == "Konzert") {
+    if (type === "Konzert") {
       events.push({
         date,
         title,
         link,
+        image,
         excerpt
       });
     }
