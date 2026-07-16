@@ -12,6 +12,7 @@ import { scrapeDreikoenigskeller } from "./sites/dreikoenigskeller.js";
 import { scrapeCave } from "./sites/cave.js";
 import { scrapeElferClub } from "./sites/elferClub.js";
 import { scrapeInDerAu } from "./sites/inDerAu.js";
+import { scrapeStadthalleOffenbach } from "./sites/stadthalleOffenbach.js";
 // weitere Scraper hier importieren
 
 export async function runScraper() {
@@ -27,7 +28,8 @@ export async function runScraper() {
     scrapeDreikoenigskeller,
     scrapeCave,
     scrapeElferClub,
-    scrapeInDerAu
+    scrapeInDerAu,
+    scrapeStadthalleOffenbach
     // weitere Scraper hier eintragen
   ];
 
@@ -36,8 +38,14 @@ export async function runScraper() {
       const siteData = await scraper();
       results.push(siteData);
     } catch (err) {
-      console.error(`Fehler beim Scrapen mit ${scraper.name || "unnamed"}:`, err && err.message ? err.message : err);
-      results.push({ site: scraper.name || null, error: err && err.message ? err.message : String(err) });
+      console.error(
+        `Fehler beim Scrapen mit ${scraper.name || "unnamed"}:`,
+        err && err.message ? err.message : err,
+      );
+      results.push({
+        site: scraper.name || null,
+        error: err && err.message ? err.message : String(err),
+      });
       // weiter mit dem nächsten Scraper
       continue;
     }

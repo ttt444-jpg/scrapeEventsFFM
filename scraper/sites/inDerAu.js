@@ -33,13 +33,14 @@ export async function scrapeInDerAu() {
     const excerpt = paragraphs.slice(1).join("\n\n");
 
     // Links extrahieren
-    const links = new URL("https://www.au-frankfurt.org/dates.html", url).href;
+    const link = url;
 
     events.push({
       date,
       title,
       excerpt,
-      links
+      img: imgFull,
+      link
     });
   });
 
