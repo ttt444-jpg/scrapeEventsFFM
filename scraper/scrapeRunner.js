@@ -13,6 +13,7 @@ import { scrapeCave } from "./sites/cave.js";
 import { scrapeElferClub } from "./sites/elferClub.js";
 import { scrapeInDerAu } from "./sites/inDerAu.js";
 import { scrapeStadthalleOffenbach } from "./sites/stadthalleOffenbach.js";
+import { scrapeMousonturm } from "./sites/mousonturm.js";
 // weitere Scraper hier importieren
 
 export async function runScraper() {
@@ -29,7 +30,8 @@ export async function runScraper() {
     scrapeCave,
     scrapeElferClub,
     scrapeInDerAu,
-    scrapeStadthalleOffenbach
+    scrapeStadthalleOffenbach,
+    scrapeMousonturm,
     // weitere Scraper hier eintragen
   ];
 
