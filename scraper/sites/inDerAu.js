@@ -45,7 +45,7 @@ export async function scrapeInDerAu() {
   });
 
   return {
-    site: "AU Frankfurt",
+    site: "In der AU",
     url: url,
     events
   };

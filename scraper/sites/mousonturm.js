@@ -53,7 +53,7 @@ export async function scrapeMousonturm() {
   });
 
   return {
-    site: "Mousonturm Frankfurt",
+    site: "Mousonturm",
     url,
     events
   };

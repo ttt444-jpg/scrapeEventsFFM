@@ -21,7 +21,7 @@ export async function scrapeBettClub() {
   });
 
   return {
-    site: "bett-club.de",
+    site: "Bett Club",
     url,
     events
   };

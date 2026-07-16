@@ -40,7 +40,7 @@ export async function scrapeCave() {
     }
   }
   return {
-        site: "The Cave",
+        site: "Cave",
         url,
         events,
       };
