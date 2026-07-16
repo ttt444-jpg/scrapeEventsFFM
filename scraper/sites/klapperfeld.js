@@ -7,24 +7,28 @@ export async function scrapeKlapperfeld() {
   const $ = await loadPage(baseUrl);
   const events = [];
 
-  $("h3.entry-title a").each((_, el) => {
+  $("div.td_module_wrap").each((_, el) => {
     const $el = $(el);
 
-    const link = $el.attr("href");
-    const title = $el.attr("title")?.trim() || $el.text().trim();
+    // Titel + Link
+    const linkEl = $el.find("h3.entry-title a");
+    const link = linkEl.attr("href");
+    const title = linkEl.attr("title")?.trim() || linkEl.text().trim();
 
-    // Datum & Uhrzeit aus dem Titel extrahieren
+    // Datum aus Titel extrahieren
     const dateMatch = title.match(/(\d{1,2}\.\d{1,2}(?:\.\d{2,4})?)/);
-
     const date = dateMatch ? dateMatch[1] : "";
 
-    const excerpt = "";
+    // Bild-URL extrahieren
+    const imgEl = $el.find("img.entry-thumb");
+    const image = imgEl.attr("src") || "";
 
     events.push({
       date,
       title,
       link,
-      excerpt
+      image,
+      excerpt: ""
     });
   });
 
