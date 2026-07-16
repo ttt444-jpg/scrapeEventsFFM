@@ -22,7 +22,6 @@ export async function runScraper() {
     scrapeBatschkapp,
     scrapeNachtleben,
     scrapeZoom,
-    //scrapeHafen2,
     scrapeKlapperfeld,
     scrapeSchonSchoen,
     scrapeSchlachthof,
@@ -32,7 +31,6 @@ export async function runScraper() {
     scrapeInDerAu,
     scrapeStadthalleOffenbach,
     scrapeMousonturm,
-    // weitere Scraper hier eintragen
   ];
 
   for (const scraper of scrapers) {
@@ -40,18 +38,14 @@ export async function runScraper() {
       const siteData = await scraper();
       results.push(siteData);
     } catch (err) {
-      console.error(
-        `Fehler beim Scrapen mit ${scraper.name || "unnamed"}:`,
-        err && err.message ? err.message : err,
-      );
-      results.push({
-        site: scraper.name || null,
-        error: err && err.message ? err.message : String(err),
-      });
-      // weiter mit dem nächsten Scraper
+      console.error(`Fehler beim Scrapen mit ${scraper.name}:`, err.message);
+      results.push({ site: scraper.name, error: err.message });
       continue;
     }
   }
+
+  // ⭐ Alphabetisch sortieren
+  results.sort((a, b) => a.site.localeCompare(b.site));
 
   console.log("Scraping abgeschlossen");
 }
