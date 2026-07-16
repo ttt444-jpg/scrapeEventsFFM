@@ -12,17 +12,46 @@ export async function scrapeBettClub() {
     const excerpt = $(el).find(".event-title .event-excerpt").text().trim();
     const link = $(el).closest("a").attr("href") || null;
 
+    const img = $(el).find("img");
+
+    let image = img.attr("src") || null;
+
+    // Lazy-load Varianten
+    const lazySrc = img.attr("data-src") || img.attr("data-lazy-src");
+    const srcset = img.attr("srcset");
+
+    // Falls lazy-src existiert → echtes Bild
+    if (lazySrc) {
+      image = lazySrc;
+    }
+
+    // Falls srcset existiert → erstes Bild nehmen
+    else if (srcset) {
+      image = srcset.split(" ")[0];
+    }
+
+    // Fallbacks rausfiltern
+    if (
+      image &&
+      (image.includes("placeholder") ||
+        image.includes("fallback") ||
+        image.includes("default"))
+    ) {
+      image = null;
+    }
+
     events.push({
       date,
       title,
       excerpt,
-      link
+      link,
+      image,
     });
   });
 
   return {
     site: "Bett Club",
     url,
-    events
+    events,
   };
 }
