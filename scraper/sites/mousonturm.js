@@ -21,36 +21,49 @@ export async function scrapeMousonturm() {
       let link = entry.find(".calendar-entry__title a").attr("href") || null;
       if (link) link = new URL(link, url).href;
 
-      const time = entry.find(".calendar-entry__time").text().trim();
       const excerpt = entry.find(".calendar-entry__location").text().trim();
 
-      // Festival
-      const festival = entry.find(".entry-tag--festival").text().trim() || null;
-
-      // Alle Kategorien sammeln
       const categories = entry.find(".entry-tag--category")
         .map((_, el) => $(el).text().trim())
         .get();
 
-      // Ticket
-      let ticket = entry.find(".calendar-entry__tickt-button").attr("href") || null;
-      if (ticket) ticket = new URL(ticket, url).href;
 
-      // Prüfen ob mindestens eine Kategorie "Concert" ist
       if (categories.includes("Concert")) {
         events.push({
           date: fullDate,
-          time,
           title,
-          categories,
-          festival,
           excerpt,
           link,
-          ticket
         });
       }
     });
   });
+
+  // 🔥 Jetzt Bilder nachladen
+  for (const event of events) {
+    if (!event.link) continue;
+
+    try {
+      const detail$ = await loadPage(event.link);
+
+      const img = detail$(".article-media-item__image img");
+
+      let imgUrl =
+        img.attr("data-src") ||
+        img.attr("src") ||
+        null;
+
+      if (imgUrl) {
+        imgUrl = new URL(imgUrl, event.link).href;
+      }
+
+      event.image = imgUrl || null;
+
+    } catch (err) {
+      console.error("Fehler beim Laden der Detailseite:", event.link, err);
+      event.image = null;
+    }
+  }
 
   return {
     site: "Mousonturm",
