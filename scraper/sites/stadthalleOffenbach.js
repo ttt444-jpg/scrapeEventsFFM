@@ -1,5 +1,7 @@
 import { loadPage } from "../scraperBase.js";
 import * as cheerio from "cheerio";
+import { utils_truncate } from "../../utils/utils.js";
+
 
 export async function scrapeStadthalleOffenbach() {
   const url =
@@ -25,7 +27,7 @@ export async function scrapeStadthalleOffenbach() {
     const date = root.find(".SP-Scheduling__date").text().trim();
 
     // Beschreibung
-    const excerpt = root.find(".SP-Teaser__abstract").text().trim();
+    const excerpt = utils_truncate(root.find(".SP-Teaser__abstract").text().trim(), 100);
 
     // Bild
     let image = null;
@@ -45,8 +47,6 @@ export async function scrapeStadthalleOffenbach() {
     }
 
     if (image) image = new URL(image, url).href;
-
-    console.log("FOUND IMAGE:", image);
 
     if (category == "Konzert")
       events.push({

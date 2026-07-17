@@ -1,4 +1,5 @@
 import { loadPage } from "../scraperBase.js";
+import { utils_truncate } from "../../utils/utils.js";
 
 export async function scrapeInDerAu() {
   const url = "https://www.au-frankfurt.org/dates.html";
@@ -28,7 +29,7 @@ export async function scrapeInDerAu() {
     const paragraphs = eventCell.find("p").map((_, p) => $(p).text().trim()).get();
 
     // Beschreibung = alle Absätze außer dem ersten
-    const excerpt = paragraphs.slice(1).join("\n\n");
+    const excerpt = utils_truncate(paragraphs.slice(1).join("\n\n"),100);
 
     // Link = Seite selbst (AU hat keine Event-Unterseiten)
     const link = url;
