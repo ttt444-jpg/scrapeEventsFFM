@@ -1,7 +1,9 @@
 import { loadPage } from "../scraperBase.js";
+import * as cheerio from "cheerio";
 
 export async function scrapeStadthalleOffenbach() {
-  const url = "https://www.offenbach.de/stadtwerke/microsite/stadthalle/besucher/veranstaltungen/veranstaltungkalender.php?form=eventSearch-1.form&sp%3Afulltext%5B%5D=&sp%3AdateRange%5B%5D=empty&sp%3AdateRange%5B%5D=__last__&sp%3AdateFrom%5B%5D=&sp%3AdateTo%5B%5D=&action=submit";
+  const url =
+    "https://www.offenbach.de/stadtwerke/microsite/stadthalle/besucher/veranstaltungen/veranstaltungkalender.php?form=eventSearch-1.form&sp%3Afulltext%5B%5D=&sp%3AdateRange%5B%5D=empty&sp%3AdateRange%5B%5D=__last__&sp%3AdateFrom%5B%5D=&sp%3AdateTo%5B%5D=&action=submit";
   const $ = await loadPage(url);
 
   const events = [];
@@ -21,32 +23,44 @@ export async function scrapeStadthalleOffenbach() {
 
     // Datum + Zeit
     const date = root.find(".SP-Scheduling__date").text().trim();
-    const time = root.find(".SP-Scheduling__time").text().trim();
 
     // Beschreibung
     const excerpt = root.find(".SP-Teaser__abstract").text().trim();
 
     // Bild
-    let img = root.find(".SP-FixedSize__content").attr("src")
-             || root.find(".SP-Teaser__figure img").attr("src")
-             || null;
-    if (img) img = new URL(img, url).href;
+    let image = null;
+
+    // 1. normale Bilder
+    image =
+      root.find(".SP-FixedSize__content").attr("src") ||
+      root.find(".SP-Teaser__figure img").attr("src");
+
+    if (!image) {
+      // 2. noscript Bilder manuell parsen
+      const noscriptHtml = root.find("noscript").html();
+      if (noscriptHtml) {
+        const $$ = cheerio.load(noscriptHtml);
+        image = $$("img").attr("src") || null;
+      }
+    }
+
+    if (image) image = new URL(image, url).href;
+
+    console.log("FOUND IMAGE:", image);
 
     if (category == "Konzert")
-    events.push({
-      category,
-      title,
-      date,
-      time,
-      excerpt,
-      link,
-      img
-    });
+      events.push({
+        title,
+        date,
+        excerpt,
+        link,
+        image,
+      });
   });
 
   return {
     site: "Stadthalle Offenbach",
     url,
-    events
+    events,
   };
 }
