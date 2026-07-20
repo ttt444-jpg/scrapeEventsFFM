@@ -4,7 +4,7 @@ import { scrapeBettClub } from "./sites/bettClub.js";
 import { scrapeBatschkapp } from "./sites/batschkapp.js";
 import { scrapeNachtleben } from "./sites/nachtleben.js";
 import { scrapeZoom } from "./sites/zoom.js";
-//import { scrapeHafen2 } from "./sites/hafen2.js"; NOT WORKING YET
+import { scrapeHafen2 } from "./sites/hafen2.js";
 import { scrapeKlapperfeld } from "./sites/klapperfeld.js";
 import { scrapeSchonSchoen } from "./sites/schonSchoen.js";
 import { scrapeSchlachthof } from "./sites/schlachthof.js";
@@ -34,7 +34,8 @@ export async function runScraper() {
     scrapeStadthalleOffenbach,
     scrapeMousonturm,
     scrapeHfgKapelle,
-    scrapeYachtclub
+    scrapeYachtclub,
+    scrapeHafen2
   ];
 
   for (const scraper of scrapers) {
