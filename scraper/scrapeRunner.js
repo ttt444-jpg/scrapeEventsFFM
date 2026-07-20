@@ -14,6 +14,8 @@ import { scrapeElferClub } from "./sites/elferClub.js";
 import { scrapeInDerAu } from "./sites/inDerAu.js";
 import { scrapeStadthalleOffenbach } from "./sites/stadthalleOffenbach.js";
 import { scrapeMousonturm } from "./sites/mousonturm.js";
+import { scrapeHfgKapelle } from "./sites/hfgKapelle.js";
+import { scrapeYachtclub } from "./sites/yachtclub.js";
 // weitere Scraper hier importieren
 
 export async function runScraper() {
@@ -31,6 +33,8 @@ export async function runScraper() {
     scrapeInDerAu,
     scrapeStadthalleOffenbach,
     scrapeMousonturm,
+    scrapeHfgKapelle,
+    scrapeYachtclub
   ];
 
   for (const scraper of scrapers) {
