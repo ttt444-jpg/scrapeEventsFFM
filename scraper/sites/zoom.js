@@ -19,12 +19,18 @@ export async function scrapeZoom() {
         const link = json.url || "";
         const time = json.doorTime || "";
 
+        // image kann String, Array oder ImageObject sein
+        let rawImg = Array.isArray(json.image) ? json.image[0] : json.image;
+        if (rawImg && typeof rawImg === "object") rawImg = rawImg.url;
+        const image = rawImg ? new URL(rawImg, url).href : null;
+
         events.push({
           date,
           title,
           excerpt,
           time,
-          link
+          link,
+          image
         });
       }
     } catch (e) {
