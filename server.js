@@ -199,11 +199,14 @@ app.get("/", (req, res) => {
           }
 
           .tile-head {
+            margin-bottom: 10px;
+          }
+          .tile-head a {
             display: flex;
             flex-wrap: wrap;
             align-items: baseline;
             gap: 3px 8px;
-            margin-bottom: 10px;
+            font-weight: normal;
           }
 
           .tile-date {
@@ -217,10 +220,6 @@ app.get("/", (req, res) => {
             text-transform: uppercase;
             letter-spacing: 0.04em;
             color: #8ab4f8;
-          }
-          .tile .tile-site a {
-            color: #8ab4f8;
-            font-weight: normal;
           }
 
           .tile-title {
@@ -274,10 +273,10 @@ app.get("/", (req, res) => {
             <div class="tile" data-date="${ev._iso}">
 
               <div class="tile-head">
-                ${ev.date ? `<span class="tile-date">${ev.date}</span>` : ""}
-                <span class="tile-site">
-                  <a href="${ev._siteUrl}" target="_blank">${ev._site}</a>
-                </span>
+                <a href="${ev._siteUrl}" target="_blank">
+                  ${ev.date ? `<span class="tile-date">${ev.date}</span>` : ""}
+                  <span class="tile-site">${ev._site}</span>
+                </a>
               </div>
 
               ${ev.image ? `
