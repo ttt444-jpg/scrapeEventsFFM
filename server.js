@@ -16,8 +16,11 @@ app.get("/", (req, res) => {
     <html>
       <head>
         <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Scraper Ergebnisse – Dark Mode</title>
         <style>
+          *, *::before, *::after { box-sizing: border-box; }
+
           body {
             font-family: Arial, sans-serif;
             background: #121212;
@@ -36,6 +39,16 @@ app.get("/", (req, res) => {
             color: #ffffff;
           }
 
+          /* Locations-Überschrift exakt im Stil des Kachel-Labels (.tile-site) */
+          .site-block h2 {
+            color: #8ab4f8;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            font-size: 11px;
+            font-weight: normal;
+            margin: 0 0 10px;
+          }
+
           a {
             color: #ffffff;
             text-decoration: none;
@@ -47,6 +60,7 @@ app.get("/", (req, res) => {
 
           /* ---- Kalender ---- */
           #calendar {
+            width: 100%;
             max-width: 340px;
             margin: 0 auto;
             background: #1e1e1e;
@@ -123,6 +137,7 @@ app.get("/", (req, res) => {
           .cal-actions {
             margin-top: 10px;
             display: flex;
+            flex-wrap: wrap;
             gap: 8px;
             justify-content: center;
           }
@@ -153,7 +168,7 @@ app.get("/", (req, res) => {
           /* 25% smaller tiles */
           .tiles {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(min(210px, 100%), 1fr));
             gap: 20px;
           }
 
@@ -183,6 +198,15 @@ app.get("/", (req, res) => {
             display: block;
           }
 
+          .tile-site {
+            display: none;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #8ab4f8;
+            margin-bottom: 10px;
+          }
+
           .tile-title {
             font-size: 16px;
             font-weight: bold;
@@ -210,6 +234,44 @@ app.get("/", (req, res) => {
           .tile a:hover {
             color: #e0e0e0;
           }
+
+          /* Bei aktivem Datumsfilter: keine Locations-Gruppen, alle Kacheln
+             in einem dichten Raster – spart den vielen Leerraum. */
+          #results.filtered {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(min(210px, 100%), 1fr));
+            gap: 20px;
+            align-items: start;
+          }
+          #results.filtered .site-block,
+          #results.filtered .tiles {
+            display: contents;
+          }
+          #results.filtered .site-block > a {
+            display: none;
+          }
+          #results.filtered .tile-site {
+            display: block;
+          }
+
+          /* ---- Mobil ---- */
+          @media (max-width: 600px) {
+            body { padding: 12px; }
+
+            h1 { font-size: 1.5em; margin-bottom: 14px; }
+
+            #cal-hint { margin-bottom: 18px; }
+
+            .site-block { margin-bottom: 30px; }
+
+            .tiles,
+            #results.filtered {
+              grid-template-columns: 1fr;
+              gap: 14px;
+            }
+
+            .tile { padding: 12px; }
+          }
         </style>
       </head>
 
@@ -219,6 +281,7 @@ app.get("/", (req, res) => {
         <div id="calendar"></div>
         <div id="cal-hint"></div>
 
+        <div id="results">
         ${results.map(site => `
           <div class="site-block">
             <a href="${site.url}" target="_blank">
@@ -228,6 +291,8 @@ app.get("/", (req, res) => {
             <div class="tiles">
               ${site.events.map(ev => `
                 <div class="tile" data-date="${toISO(ev.date)}">
+
+                  <div class="tile-site">${site.site}</div>
 
                   ${ev.image ? `
                     <a href="${ev.link}" target="_blank">
@@ -247,6 +312,7 @@ app.get("/", (req, res) => {
             </div>
           </div>
         `).join("")}
+        </div>
 
         <script>
         (function () {
@@ -254,6 +320,7 @@ app.get("/", (req, res) => {
           var blocks = [].slice.call(document.querySelectorAll('.site-block'));
           var calEl = document.getElementById('calendar');
           var hintEl = document.getElementById('cal-hint');
+          var resultsEl = document.getElementById('results');
 
           var counts = {};
           tiles.forEach(function (t) {
@@ -307,6 +374,7 @@ app.get("/", (req, res) => {
           }
 
           function apply() {
+            resultsEl.classList.toggle('filtered', !!selected);
             var total = 0;
             blocks.forEach(function (b) {
               var vis = 0;
