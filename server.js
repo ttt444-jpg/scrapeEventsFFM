@@ -120,9 +120,14 @@ app.get("/", (req, res) => {
           }
           .cal-cell.selected .cal-dot { background: #0a0a0a; }
 
-          .cal-actions { margin-top: 10px; text-align: center; }
+          .cal-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+          }
 
-          #cal-all {
+          .cal-actions button {
             background: #2a2a2a;
             color: #fff;
             border: 0;
@@ -131,7 +136,7 @@ app.get("/", (req, res) => {
             cursor: pointer;
             font-size: 13px;
           }
-          #cal-all:hover { background: #3a3a3a; }
+          .cal-actions button:hover { background: #3a3a3a; }
           #cal-all.active { background: #6ea8fe; color: #0a0a0a; }
 
           #cal-hint {
@@ -294,7 +299,10 @@ app.get("/", (req, res) => {
               if (ci === selected) cls += ' selected';
               h += '<button type="button" class="' + cls + '" data-date="' + ci + '"' + (n ? '' : ' disabled') + '>' + d + (n ? '<span class="cal-dot"></span>' : '') + '</button>';
             }
-            h += '</div><div class="cal-actions"><button type="button" id="cal-all" class="' + (selected ? '' : 'active') + '">Alle Termine</button></div>';
+            h += '</div><div class="cal-actions">';
+            h += '<button type="button" id="cal-today">Heute</button>';
+            h += '<button type="button" id="cal-all" class="' + (selected ? '' : 'active') + '">Alle Termine</button>';
+            h += '</div>';
             calEl.innerHTML = h;
           }
 
@@ -326,6 +334,14 @@ app.get("/", (req, res) => {
               return;
             }
             if (evt.target.id === 'cal-all') { selected = null; render(); apply(); return; }
+            if (evt.target.id === 'cal-today') {
+              view.y = now.getFullYear();
+              view.m = now.getMonth();
+              selected = todayIso;
+              render();
+              apply();
+              return;
+            }
             var cell = evt.target.closest('.cal-cell[data-date]');
             if (cell && !cell.disabled) { selected = cell.getAttribute('data-date'); render(); apply(); }
           });
