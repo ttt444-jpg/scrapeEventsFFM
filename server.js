@@ -63,10 +63,15 @@ app.get("/", (req, res) => {
             box-shadow: 0 8px 20px rgba(0,0,0,0.7);
           }
 
+          .tile > a {
+            display: block;
+          }
+
           .tile img {
             width: 100%;
             border-radius: 8px;
             margin-bottom: 12px;
+            display: block;
           }
 
           .tile-title {
@@ -111,16 +116,20 @@ app.get("/", (req, res) => {
             <div class="tiles">
               ${site.events.slice(0, 10).map(ev => `
                 <div class="tile">
-                  
+
                   ${ev.image ? `
-                    <img src="${ev.image}" alt="${ev.title}">
+                    <a href="${ev.link}" target="_blank">
+                      <img src="${ev.image}" alt="${ev.title}">
+                    </a>
                   ` : ""}
 
-                  <div class="tile-title">${ev.title}</div>
+                  <div class="tile-title">
+                    ${ev.link && !ev.image
+                      ? `<a href="${ev.link}" target="_blank">${ev.title}</a>`
+                      : ev.title}
+                  </div>
                   <div class="tile-date">${ev.date}</div>
                   <div class="tile-excerpt">${ev.excerpt}</div>
-
-                  <a href="${ev.link}" target="_blank">Mehr erfahren →</a>
                 </div>
               `).join("")}
             </div>
