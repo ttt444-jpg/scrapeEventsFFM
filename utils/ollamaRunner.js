@@ -1,6 +1,30 @@
 import fs from "fs";
 import ollama from "ollama";
 
+// Liest den kompletten Text eines Veranstaltungsflyers per Vision-Modell aus.
+// Erwartet einen Buffer oder einen bereits base64-kodierten String.
+export async function ocrFlyer(imageBuffer) {
+  const imageBase64 = Buffer.isBuffer(imageBuffer)
+    ? imageBuffer.toString("base64")
+    : imageBuffer;
+
+  const response = await ollama.chat({
+    model: "llava",
+    messages: [
+      {
+        role: "user",
+        content:
+          "Das ist ein Veranstaltungsflyer. Lies den kompletten sichtbaren Text " +
+          "wörtlich vor (inklusive Datum, Wochentag, Uhrzeit und Acts). " +
+          "Gib nur den Text zurück, keine Beschreibung.",
+        images: [imageBase64],
+      },
+    ],
+  });
+
+  return response?.message?.content?.trim() || "";
+}
+
 export async function llava() {
   // Bild laden und in Base64 umwandeln
   const imageBase64 = fs.readFileSync("./image.png").toString("base64");
