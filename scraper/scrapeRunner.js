@@ -1,4 +1,5 @@
 import { results } from "../data.js";
+import { formatEventDate } from "../utils/formatDate.js";
 
 import { scrapeBettClub } from "./sites/bettClub.js";
 import { scrapeBatschkapp } from "./sites/batschkapp.js";
@@ -41,6 +42,11 @@ export async function runScraper() {
   for (const scraper of scrapers) {
     try {
       const siteData = await scraper();
+      if (siteData && Array.isArray(siteData.events)) {
+        for (const ev of siteData.events) {
+          ev.date = formatEventDate(ev.date);
+        }
+      }
       results.push(siteData);
     } catch (err) {
       console.error(`Fehler beim Scrapen mit ${scraper.name}:`, err.message);
