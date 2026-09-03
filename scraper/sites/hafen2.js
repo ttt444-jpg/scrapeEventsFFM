@@ -26,9 +26,19 @@ export async function scrapeHafen2() {
     link = link ? new URL(link, url).href : null;
 
     // --- Bild extrahieren ---
-    // Bild liegt im versteckten <span class="hidden"> als <img src="index.php?tinymceimg=...">
-    let img = $(el).find("span.hidden img").attr("src") || null;
-    const image = img ? new URL(img, url).href : null;
+    // Der eigentliche Inhalt steht als HTML-Kommentar in <span class="hidden">,
+    // daher gibt es kein echtes <img>-Element – wir parsen die Kommentar-Strings.
+    const hiddenHtml = $(el)
+      .find("span.hidden")
+      .map((_, s) => $(s).html() || "")
+      .get()
+      .join("\n");
+    const imgMatch = hiddenHtml.match(
+      /tinymceimg=([^"'&\s\\]+\.(?:jpe?g|png|gif|webp))/i
+    );
+    const image = imgMatch
+      ? new URL("index.php?tinymceimg=" + imgMatch[1], url).href
+      : null;
 
     // --- Excerpt (Kurzbeschreibung) ---
     // Hafen2 hat keinen echten Untertitel → wir nehmen die location-Zeile
