@@ -1,6 +1,14 @@
 import { results } from "../data.js";
-import { formatEventDate } from "../utils/formatDate.js";
+import { formatEventDate, eventDateISO } from "../utils/formatDate.js";
 import { saveResultsCache } from "../utils/resultsCache.js";
+
+// Heutiges Datum als "YYYY-MM-DD"
+function todayISO() {
+  const n = new Date();
+  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(
+    n.getDate(),
+  ).padStart(2, "0")}`;
+}
 
 import { scrapeBettClub } from "./sites/bettClub.js";
 import { scrapeBatschkapp } from "./sites/batschkapp.js";
@@ -40,6 +48,8 @@ export async function runScraper() {
     scrapeHafen2
   ];
 
+  const today = todayISO();
+
   for (const scraper of scrapers) {
     try {
       const siteData = await scraper();
@@ -47,6 +57,11 @@ export async function runScraper() {
         for (const ev of siteData.events) {
           ev.date = formatEventDate(ev.date);
         }
+        // Vergangene Termine gar nicht erst speichern (ohne Datum bleibt)
+        siteData.events = siteData.events.filter((ev) => {
+          const iso = eventDateISO(ev.date);
+          return !iso || iso >= today;
+        });
       }
       results.push(siteData);
     } catch (err) {

@@ -98,16 +98,21 @@ function parseDayOnly(str) {
   return { day, month, year };
 }
 
+function parse(str) {
+  return (
+    parseIso(str) ||
+    parseNumeric(str) ||
+    parseMonthName(str) ||
+    parseDayOnly(str)
+  );
+}
+
 export function formatEventDate(raw) {
   if (raw == null) return "";
   const str = String(raw).trim();
   if (!str) return "";
 
-  const parsed =
-    parseIso(str) ||
-    parseNumeric(str) ||
-    parseMonthName(str) ||
-    parseDayOnly(str);
+  const parsed = parse(str);
 
   if (!parsed) {
     console.warn(`formatEventDate: konnte Datum nicht parsen: "${str}"`);
@@ -115,4 +120,18 @@ export function formatEventDate(raw) {
   }
 
   return render(parsed.day, parsed.month, parsed.year);
+}
+
+// "So, 13.09.26" (oder ein Rohdatum) -> "2026-09-13"; "" wenn nicht parsebar
+export function eventDateISO(raw) {
+  if (raw == null) return "";
+  const str = String(raw).trim();
+  if (!str) return "";
+
+  const parsed = parse(str);
+  if (!parsed) return "";
+
+  return `${parsed.year}-${String(parsed.month).padStart(2, "0")}-${String(
+    parsed.day,
+  ).padStart(2, "0")}`;
 }

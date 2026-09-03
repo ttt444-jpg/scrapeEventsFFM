@@ -12,6 +12,23 @@ function toISO(dateStr) {
 }
 
 app.get("/", (req, res) => {
+  // Alle Events zu einer flachen, nach Datum sortierten Liste zusammenführen
+  // (vergangene Termine werden bereits beim Scrapen aussortiert)
+  const allEvents = results
+    .flatMap((site) =>
+      (site.events || []).map((ev) => ({
+        ...ev,
+        _site: site.site,
+        _siteUrl: site.url,
+        _iso: toISO(ev.date),
+      })),
+    )
+    .sort((a, b) => {
+      if (!a._iso) return 1; // ohne Datum ans Ende
+      if (!b._iso) return -1;
+      return a._iso.localeCompare(b._iso);
+    });
+
   res.send(`
     <html>
       <head>
@@ -33,20 +50,6 @@ app.get("/", (req, res) => {
             text-align: center;
             margin-bottom: 20px;
             color: #ffffff;
-          }
-
-          h2 {
-            color: #ffffff;
-          }
-
-          /* Locations-Überschrift exakt im Stil des Kachel-Labels (.tile-site) */
-          .site-block h2 {
-            color: #8ab4f8;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            font-size: 11px;
-            font-weight: normal;
-            margin: 0 0 10px;
           }
 
           a {
@@ -161,15 +164,12 @@ app.get("/", (req, res) => {
             margin: 8px 0 26px;
           }
 
-          .site-block {
-            margin-bottom: 50px;
-          }
-
-          /* 25% smaller tiles */
+          /* Alle Kacheln in einem Raster, nach Datum sortiert */
           .tiles {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(min(210px, 100%), 1fr));
             gap: 20px;
+            align-items: start;
           }
 
           .tile {
@@ -199,12 +199,15 @@ app.get("/", (req, res) => {
           }
 
           .tile-site {
-            display: none;
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.04em;
             color: #8ab4f8;
             margin-bottom: 10px;
+          }
+          .tile .tile-site a {
+            color: #8ab4f8;
+            font-weight: normal;
           }
 
           .tile-title {
@@ -235,25 +238,6 @@ app.get("/", (req, res) => {
             color: #e0e0e0;
           }
 
-          /* Bei aktivem Datumsfilter: keine Locations-Gruppen, alle Kacheln
-             in einem dichten Raster – spart den vielen Leerraum. */
-          #results.filtered {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(min(210px, 100%), 1fr));
-            gap: 20px;
-            align-items: start;
-          }
-          #results.filtered .site-block,
-          #results.filtered .tiles {
-            display: contents;
-          }
-          #results.filtered .site-block > a {
-            display: none;
-          }
-          #results.filtered .tile-site {
-            display: block;
-          }
-
           /* ---- Mobil ---- */
           @media (max-width: 600px) {
             body { padding: 12px; }
@@ -262,10 +246,7 @@ app.get("/", (req, res) => {
 
             #cal-hint { margin-bottom: 18px; }
 
-            .site-block { margin-bottom: 30px; }
-
-            .tiles,
-            #results.filtered {
+            .tiles {
               grid-template-columns: 1fr;
               gap: 14px;
             }
@@ -281,46 +262,36 @@ app.get("/", (req, res) => {
         <div id="calendar"></div>
         <div id="cal-hint"></div>
 
-        <div id="results">
-        ${results.map(site => `
-          <div class="site-block">
-            <a href="${site.url}" target="_blank">
-              <h2>${site.site}</h2>
-            </a>
+        <div id="results" class="tiles">
+          ${allEvents.map(ev => `
+            <div class="tile" data-date="${ev._iso}">
 
-            <div class="tiles">
-              ${site.events.map(ev => `
-                <div class="tile" data-date="${toISO(ev.date)}">
+              <div class="tile-site">
+                <a href="${ev._siteUrl}" target="_blank">${ev._site}</a>
+              </div>
 
-                  <div class="tile-site">${site.site}</div>
+              ${ev.image ? `
+                <a href="${ev.link}" target="_blank">
+                  <img src="${ev.image}" alt="${ev.title}">
+                </a>
+              ` : ""}
 
-                  ${ev.image ? `
-                    <a href="${ev.link}" target="_blank">
-                      <img src="${ev.image}" alt="${ev.title}">
-                    </a>
-                  ` : ""}
-
-                  <div class="tile-title">
-                    ${ev.link && !ev.image
-                      ? `<a href="${ev.link}" target="_blank">${ev.title}</a>`
-                      : ev.title}
-                  </div>
-                  <div class="tile-date">${ev.date}</div>
-                  <div class="tile-excerpt">${ev.excerpt}</div>
-                </div>
-              `).join("")}
+              <div class="tile-title">
+                ${ev.link && !ev.image
+                  ? `<a href="${ev.link}" target="_blank">${ev.title}</a>`
+                  : ev.title}
+              </div>
+              <div class="tile-date">${ev.date}</div>
+              <div class="tile-excerpt">${ev.excerpt}</div>
             </div>
-          </div>
-        `).join("")}
+          `).join("")}
         </div>
 
         <script>
         (function () {
           var tiles = [].slice.call(document.querySelectorAll('.tile'));
-          var blocks = [].slice.call(document.querySelectorAll('.site-block'));
           var calEl = document.getElementById('calendar');
           var hintEl = document.getElementById('cal-hint');
-          var resultsEl = document.getElementById('results');
 
           var counts = {};
           tiles.forEach(function (t) {
@@ -374,18 +345,12 @@ app.get("/", (req, res) => {
           }
 
           function apply() {
-            resultsEl.classList.toggle('filtered', !!selected);
             var total = 0;
-            blocks.forEach(function (b) {
-              var vis = 0;
-              [].slice.call(b.querySelectorAll('.tile')).forEach(function (t) {
-                var d = t.getAttribute('data-date');
-                var show = !selected || d === selected;
-                t.style.display = show ? '' : 'none';
-                if (show) vis++;
-              });
-              b.style.display = vis ? '' : 'none';
-              total += vis;
+            tiles.forEach(function (t) {
+              var d = t.getAttribute('data-date');
+              var show = !selected || d === selected;
+              t.style.display = show ? '' : 'none';
+              if (show) total++;
             });
             hintEl.textContent = selected
               ? human(selected) + ' – ' + total + (total === 1 ? ' Termin' : ' Termine')
