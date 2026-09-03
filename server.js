@@ -198,12 +198,25 @@ app.get("/", (req, res) => {
             display: block;
           }
 
+          .tile-head {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: 3px 8px;
+            margin-bottom: 10px;
+          }
+
+          .tile-date {
+            color: #cccccc;
+            font-size: 12px;
+            white-space: nowrap;
+          }
+
           .tile-site {
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.04em;
             color: #8ab4f8;
-            margin-bottom: 10px;
           }
           .tile .tile-site a {
             color: #8ab4f8;
@@ -215,12 +228,6 @@ app.get("/", (req, res) => {
             font-weight: bold;
             margin-bottom: 6px;
             color: #ffffff;
-          }
-
-          .tile-date {
-            color: #cccccc;
-            font-size: 13px;
-            margin-bottom: 10px;
           }
 
           .tile-excerpt {
@@ -266,8 +273,11 @@ app.get("/", (req, res) => {
           ${allEvents.map(ev => `
             <div class="tile" data-date="${ev._iso}">
 
-              <div class="tile-site">
-                <a href="${ev._siteUrl}" target="_blank">${ev._site}</a>
+              <div class="tile-head">
+                ${ev.date ? `<span class="tile-date">${ev.date}</span>` : ""}
+                <span class="tile-site">
+                  <a href="${ev._siteUrl}" target="_blank">${ev._site}</a>
+                </span>
               </div>
 
               ${ev.image ? `
@@ -281,7 +291,6 @@ app.get("/", (req, res) => {
                   ? `<a href="${ev.link}" target="_blank">${ev.title}</a>`
                   : ev.title}
               </div>
-              <div class="tile-date">${ev.date}</div>
               <div class="tile-excerpt">${ev.excerpt}</div>
             </div>
           `).join("")}
