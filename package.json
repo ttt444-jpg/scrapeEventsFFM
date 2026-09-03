@@ -4,7 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon index.js"
+    "start": "nodemon index.js",
+    "serve": "nodemon index.js -- --no-scrape"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "results.json"
+    ]
   },
   "keywords": [],
   "author": "",

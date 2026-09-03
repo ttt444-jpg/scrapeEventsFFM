@@ -1,5 +1,6 @@
 import { results } from "../data.js";
 import { formatEventDate } from "../utils/formatDate.js";
+import { saveResultsCache } from "../utils/resultsCache.js";
 
 import { scrapeBettClub } from "./sites/bettClub.js";
 import { scrapeBatschkapp } from "./sites/batschkapp.js";
@@ -57,6 +58,9 @@ export async function runScraper() {
 
   // ⭐ Alphabetisch sortieren
   results.sort((a, b) => a.site.localeCompare(b.site));
+
+  // Für Starts ohne Scraping (--no-scrape) zwischenspeichern
+  saveResultsCache(results);
 
   console.log("Scraping abgeschlossen");
 }
