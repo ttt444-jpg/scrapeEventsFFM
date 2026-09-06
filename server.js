@@ -311,7 +311,7 @@ app.get("/", (req, res) => {
           .cal-cell.empty { visibility: hidden; }
           .cal-cell:disabled { cursor: default; }
           .cal-cell.has-events { color: var(--fg); }
-          .cal-cell.has-events:not(:disabled):hover { background: rgb(var(--theme-fg) / 0.09); }
+          .cal-cell.has-events:not(:disabled):not(.selected):hover { background: rgb(var(--theme-fg) / 0.09); }
           .cal-cell.today { box-shadow: inset 0 0 0 1px var(--line-strong); }
           .cal-cell.selected {
             background: var(--mint);
