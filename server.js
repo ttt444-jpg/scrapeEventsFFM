@@ -11,6 +11,20 @@ function toISO(dateStr) {
   return `${yy}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
 }
 
+// Minimales HTML-Escaping fuer Text- und Attributkontext
+const esc = (s = "") =>
+  String(s).replace(
+    /[&<>"']/g,
+    (c) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[c],
+  );
+
 app.get("/", (req, res) => {
   // Alle Events zu einer flachen, nach Datum sortierten Liste zusammenführen
   // (vergangene Termine werden bereits beim Scrapen aussortiert)
@@ -29,277 +43,506 @@ app.get("/", (req, res) => {
       return a._iso.localeCompare(b._iso);
     });
 
+  const sources = [...new Map(results.map((s) => [s.site, s.url]))]
+    .map(([name, url]) => ({ name, url }))
+    .sort((a, b) => a.name.localeCompare(b.name, "de"));
+  const eventCount = allEvents.length;
+  const venueCount = sources.length;
+
   res.send(`
-    <html>
+    <!doctype html>
+    <html lang="de">
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Scraper Ergebnisse – Dark Mode</title>
+        <title>FFM Events – Was läuft in Frankfurt</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+        <script>
+          try {
+            var t = localStorage.getItem('theme');
+            if (t) document.documentElement.setAttribute('data-theme', t);
+          } catch (e) {}
+        </script>
         <style>
           *, *::before, *::after { box-sizing: border-box; }
 
+          :root {
+            --theme-bg: 255 255 255;
+            --theme-fg: 35 35 35;
+            --mint: #a1ffcb;
+
+            --bg: rgb(var(--theme-bg));
+            --fg: rgb(var(--theme-fg));
+            --fg-dim: rgb(var(--theme-fg) / 0.58);
+            --fg-faint: rgb(var(--theme-fg) / 0.34);
+            --line: rgb(var(--theme-fg) / 0.14);
+            --line-strong: rgb(var(--theme-fg) / 0.32);
+            --card: rgb(var(--theme-fg) / 0.028);
+
+            --font-sans: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+            --ease-out: cubic-bezier(.16, 1, .3, 1);
+
+            --maxw: 1600px;
+            --pad: clamp(16px, 5vw, 72px);
+            --header-h: 74px;
+            --radius: 14px;
+
+            color-scheme: light;
+          }
+
+          :root[data-theme="dark"] {
+            --theme-bg: 18 18 18;
+            --theme-fg: 244 244 244;
+            color-scheme: dark;
+          }
+          @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) {
+              --theme-bg: 18 18 18;
+              --theme-fg: 244 244 244;
+              color-scheme: dark;
+            }
+          }
+
+          html { -webkit-text-size-adjust: 100%; }
+
           body {
-            font-family: Arial, sans-serif;
-            background: #121212;
-            color: #ffffff;
             margin: 0;
-            padding: 20px;
+            padding: 0 var(--pad) 120px;
+            background: var(--bg);
+            color: var(--fg);
+            font-family: var(--font-sans);
+            font-size: 15px;
+            line-height: 1.5;
+            letter-spacing: -0.011em;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
           }
 
-          h1 {
-            text-align: center;
+          @media (prefers-reduced-motion: no-preference) {
+            body, .site-header, .calendar, .tile, .cal-nav,
+            .cal-actions button, .theme-toggle, .sources a {
+              transition:
+                background-color .4s var(--ease-out),
+                border-color .4s var(--ease-out),
+                color .4s var(--ease-out),
+                transform .4s var(--ease-out);
+            }
+          }
+
+          a { color: inherit; text-decoration: none; }
+
+          .wrap { max-width: var(--maxw); margin: 0 auto; }
+
+          /* ---- Header ---- */
+          .site-header {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--line);
+            background: var(--bg);
+            background: color-mix(in srgb, var(--bg) 82%, transparent);
+            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px);
+          }
+
+          .wordmark {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            white-space: nowrap;
+          }
+          .wordmark i { font-style: normal; color: var(--fg-dim); }
+
+          .theme-toggle {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            border: 1px solid var(--line-strong);
+            border-radius: 999px;
+            padding: 8px 15px;
+            background: transparent;
+            color: inherit;
+            cursor: pointer;
+          }
+          .theme-toggle:hover {
+            background: var(--fg);
+            color: var(--bg);
+            border-color: var(--fg);
+          }
+
+          /* ---- Hero ---- */
+          .hero { padding: clamp(36px, 6vw, 68px) 0 clamp(24px, 4vw, 40px); }
+          .hero .eyebrow {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            color: var(--fg-dim);
             margin-bottom: 20px;
-            color: #ffffff;
           }
-
-          a {
-            color: #ffffff;
-            text-decoration: none;
+          .hero h1 {
+            margin: 0;
+            font-size: clamp(40px, 8vw, 92px);
+            line-height: 0.94;
+            letter-spacing: -0.04em;
+            font-weight: 600;
+            text-wrap: balance;
           }
+          .hero .sub {
+            margin-top: 26px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--fg-dim);
+          }
+          .hero .sub b { color: var(--fg); font-weight: 500; }
 
-          a:hover {
-            text-decoration: underline;
+          /* ---- Layout ---- */
+          .layout {
+            display: grid;
+            gap: clamp(28px, 5vw, 64px);
+            align-items: start;
+          }
+          @media (min-width: 1024px) {
+            .layout { grid-template-columns: 336px minmax(0, 1fr); }
+            .cal-col { position: sticky; top: calc(var(--header-h) + 22px); }
           }
 
           /* ---- Kalender ---- */
-          #calendar {
-            width: 100%;
-            max-width: 340px;
-            margin: 0 auto;
-            background: #1e1e1e;
-            border: 1px solid #2c2c2c;
-            border-radius: 12px;
-            padding: 14px;
+          .calendar {
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: var(--card);
+            padding: 18px;
           }
-
           .cal-head {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 10px;
+            margin-bottom: 16px;
           }
-
-          .cal-title { font-weight: bold; font-size: 15px; }
-
+          .cal-title {
+            font-family: var(--font-mono);
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+          }
           .cal-nav {
-            background: #2a2a2a;
-            color: #fff;
-            border: 0;
-            border-radius: 8px;
-            width: 30px;
-            height: 30px;
-            font-size: 16px;
-            cursor: pointer;
-          }
-          .cal-nav:hover { background: #3a3a3a; }
-
-          .cal-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 4px;
-          }
-
-          .cal-wd {
-            text-align: center;
-            font-size: 11px;
-            color: #888;
-            padding-bottom: 4px;
-          }
-
-          .cal-cell {
-            position: relative;
-            min-height: 34px;
-            display: flex;
+            width: 34px;
+            height: 34px;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
+            border: 1px solid var(--line-strong);
+            border-radius: 999px;
             background: transparent;
+            color: inherit;
+            font-size: 15px;
+            cursor: pointer;
+          }
+          .cal-nav:hover {
+            background: var(--fg);
+            color: var(--bg);
+            border-color: var(--fg);
+          }
+
+          .cal-weekdays,
+          .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+          }
+          .cal-grid { gap: 2px; grid-auto-rows: 38px; }
+          .cal-wd {
+            text-align: center;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--fg-faint);
+            padding-bottom: 10px;
+          }
+          .cal-cell {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
             border: 0;
-            border-radius: 8px;
-            color: #dddddd;
+            border-radius: 9px;
+            background: transparent;
+            color: var(--fg-faint);
+            font-family: var(--font-mono);
             font-size: 13px;
             cursor: pointer;
           }
           .cal-cell.empty { visibility: hidden; }
-          .cal-cell:disabled { color: #555555; cursor: default; }
-          .cal-cell.has-events:not(:disabled):hover { background: #2f2f2f; }
-          .cal-cell.today { box-shadow: inset 0 0 0 1px #6ea8fe; }
-          .cal-cell.selected { background: #6ea8fe; color: #0a0a0a; font-weight: bold; }
-
+          .cal-cell:disabled { cursor: default; }
+          .cal-cell.has-events { color: var(--fg); }
+          .cal-cell.has-events:not(:disabled):hover { background: rgb(var(--theme-fg) / 0.09); }
+          .cal-cell.today { box-shadow: inset 0 0 0 1px var(--line-strong); }
+          .cal-cell.selected {
+            background: var(--mint);
+            color: #101410;
+            font-weight: 600;
+            box-shadow: none;
+          }
           .cal-dot {
-            position: absolute;
-            bottom: 5px;
-            left: 50%;
-            transform: translateX(-50%);
             width: 4px;
             height: 4px;
             border-radius: 50%;
-            background: #6ea8fe;
+            background: var(--fg-dim);
           }
-          .cal-cell.selected .cal-dot { background: #0a0a0a; }
+          .cal-cell.selected .cal-dot { background: #101410; }
 
-          .cal-actions {
-            margin-top: 10px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            justify-content: center;
-          }
-
+          .cal-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
           .cal-actions button {
-            background: #2a2a2a;
-            color: #fff;
-            border: 0;
-            border-radius: 8px;
-            padding: 6px 14px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            border: 1px solid var(--line-strong);
+            border-radius: 999px;
+            padding: 8px 14px;
+            background: transparent;
+            color: inherit;
             cursor: pointer;
-            font-size: 13px;
           }
-          .cal-actions button:hover { background: #3a3a3a; }
-          #cal-all.active { background: #6ea8fe; color: #0a0a0a; }
-
-          #cal-hint {
-            text-align: center;
-            color: #aaaaaa;
-            font-size: 13px;
-            margin: 8px 0 26px;
+          .cal-actions button:hover {
+            background: var(--fg);
+            color: var(--bg);
+            border-color: var(--fg);
+          }
+          .cal-actions button.active {
+            background: var(--mint);
+            color: #101410;
+            border-color: var(--mint);
           }
 
-          /* Alle Kacheln in einem Raster, nach Datum sortiert */
+          .cal-hint {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--fg-dim);
+            margin: 18px 2px 0;
+          }
+
+          /* ---- Tiles ---- */
           .tiles {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(min(210px, 100%), 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(min(258px, 100%), 1fr));
+            gap: 14px;
             align-items: start;
           }
-
           .tile {
-            background: #1e1e1e;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.6);
-            padding: 15px;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            border: 1px solid #2c2c2c;
-            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 16px;
+            background: var(--bg);
+            overflow: hidden;
+          }
+          .tile:hover { border-color: var(--fg); }
+          @media (prefers-reduced-motion: no-preference) {
+            .tile { opacity: 0; animation: tile-in .5s var(--ease-out) forwards; }
+            @keyframes tile-in { to { opacity: 1; } }
+            .tile:hover { transform: translateY(-4px); }
           }
 
-          .tile:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.7);
-          }
-
-          .tile > a {
-            display: block;
-          }
-
-          .tile img {
-            width: 100%;
-            border-radius: 8px;
-            margin-bottom: 12px;
-            display: block;
-          }
-
-          .tile-head {
-            margin-bottom: 10px;
-          }
-          .tile-head a {
+          .tile-eyebrow {
             display: flex;
             flex-wrap: wrap;
             align-items: baseline;
-            gap: 3px 8px;
-            font-weight: normal;
-          }
-
-          .tile-date {
-            color: #cccccc;
-            font-size: 12px;
-            white-space: nowrap;
-          }
-
-          .tile-site {
-            font-size: 11px;
+            gap: 5px 10px;
+            font-family: var(--font-mono);
+            font-size: 10.5px;
+            letter-spacing: 0.07em;
             text-transform: uppercase;
-            letter-spacing: 0.04em;
-            color: #8ab4f8;
+            color: var(--fg-dim);
+            margin-bottom: 12px;
+          }
+          .tile-eyebrow a { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 5px 10px; }
+          .tile-eyebrow .venue { color: var(--fg); }
+
+          .tile-media {
+            display: block;
+            margin: 0 -16px 14px;
+            border-top: 1px solid var(--line);
+            border-bottom: 1px solid var(--line);
+            background: var(--card);
+          }
+          .tile-media img {
+            width: 100%;
+            display: block;
+            aspect-ratio: 16 / 10;
+            object-fit: cover;
           }
 
           .tile-title {
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 6px;
-            color: #ffffff;
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            line-height: 1.22;
+            margin: 0 0 6px;
+          }
+          .tile-title a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+          .tile-excerpt { font-size: 13px; line-height: 1.45; color: var(--fg-dim); }
+
+          /* ---- Empty state ---- */
+          .empty {
+            border: 1px dashed var(--line-strong);
+            border-radius: var(--radius);
+            padding: 48px 24px;
+            text-align: center;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--fg-dim);
           }
 
-          .tile-excerpt {
-            font-size: 13px;
-            color: #dddddd;
-            margin-bottom: 12px;
+          /* ---- Footer ---- */
+          .site-footer {
+            margin-top: 96px;
+            padding-top: 28px;
+            border-top: 1px solid var(--line);
+          }
+          .foot-label {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            color: var(--fg-faint);
+            margin-bottom: 16px;
+          }
+          .sources { display: flex; flex-wrap: wrap; gap: 8px; }
+          .sources a {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--fg-dim);
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 6px 12px;
+          }
+          .sources a:hover {
+            color: var(--bg);
+            background: var(--fg);
+            border-color: var(--fg);
           }
 
-          .tile a {
-            color: #ffffff;
-            font-weight: bold;
-          }
-
-          .tile a:hover {
-            color: #e0e0e0;
-          }
-
-          /* ---- Mobil ---- */
           @media (max-width: 600px) {
-            body { padding: 12px; }
-
-            h1 { font-size: 1.5em; margin-bottom: 14px; }
-
-            #cal-hint { margin-bottom: 18px; }
-
-            .tiles {
-              grid-template-columns: 1fr;
-              gap: 14px;
-            }
-
-            .tile { padding: 12px; }
+            body { padding: 0 16px 80px; }
+            .hero { padding-top: 56px; }
           }
         </style>
       </head>
 
       <body>
-        <h1>Scraper Ergebnisse</h1>
+        <div class="wrap">
+          <header class="site-header">
+            <span class="wordmark">FFM Events <i>/ Frankfurt</i></span>
+            <button type="button" class="theme-toggle" id="theme-toggle">Dark</button>
+          </header>
 
-        <div id="calendar"></div>
-        <div id="cal-hint"></div>
+          <section class="hero">
+            <div class="eyebrow">Live Musik &amp; Clubs · Rhein-Main</div>
+            <h1>Was läuft in Frankfurt.</h1>
+            <div class="sub"><b>${eventCount}</b> Termine — <b>${venueCount}</b> Locations</div>
+          </section>
 
-        <div id="results" class="tiles">
-          ${allEvents.map(ev => `
-            <div class="tile" data-date="${ev._iso}">
-
-              <div class="tile-head">
-                <a href="${ev._siteUrl}" target="_blank">
-                  ${ev.date ? `<span class="tile-date">${ev.date}</span>` : ""}
-                  <span class="tile-site">${ev._site}</span>
-                </a>
-              </div>
-
-              ${ev.image ? `
-                <a href="${ev.link}" target="_blank">
-                  <img src="${ev.image}" alt="${ev.title}">
-                </a>
-              ` : ""}
-
-              <div class="tile-title">
-                ${ev.link && !ev.image
-                  ? `<a href="${ev.link}" target="_blank">${ev.title}</a>`
-                  : ev.title}
-              </div>
-              <div class="tile-excerpt">${ev.excerpt}</div>
+          <div class="layout">
+            <div class="cal-col">
+              <div id="calendar" class="calendar"></div>
+              <div id="cal-hint" class="cal-hint"></div>
             </div>
-          `).join("")}
+
+            <div class="results-col">
+              <div id="results" class="tiles">
+                ${allEvents
+                  .map(
+                    (ev, i) => `
+                  <article class="tile" data-date="${ev._iso}" style="animation-delay:${Math.min(i * 35, 420)}ms">
+                    <div class="tile-eyebrow">
+                      <a href="${esc(ev._siteUrl)}" target="_blank" rel="noopener">
+                        ${ev.date ? `<span class="tile-date">${esc(ev.date)}</span>` : ""}
+                        <span class="venue">${esc(ev._site)}</span>
+                      </a>
+                    </div>
+
+                    ${
+                      ev.image
+                        ? `
+                      <a class="tile-media" href="${esc(ev.link || ev._siteUrl)}" target="_blank" rel="noopener">
+                        <img src="${esc(ev.image)}" alt="${esc(ev.title)}" loading="lazy">
+                      </a>
+                    `
+                        : ""
+                    }
+
+                    <h2 class="tile-title">
+                      ${
+                        ev.link
+                          ? `<a href="${esc(ev.link)}" target="_blank" rel="noopener">${esc(ev.title)}</a>`
+                          : esc(ev.title)
+                      }
+                    </h2>
+                    ${ev.excerpt ? `<p class="tile-excerpt">${esc(ev.excerpt)}</p>` : ""}
+                  </article>
+                `,
+                  )
+                  .join("")}
+              </div>
+              <div id="empty" class="empty" hidden>Keine Termine an diesem Tag</div>
+            </div>
+          </div>
+
+          <footer class="site-footer">
+            <div class="foot-label">Quellen</div>
+            <nav class="sources">
+              ${sources
+                .map(
+                  (s) =>
+                    `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name)}</a>`,
+                )
+                .join("")}
+            </nav>
+          </footer>
         </div>
 
         <script>
+        // Kaputte Event-Bilder ausblenden statt Platzhalter zu zeigen
+        document.addEventListener('error', function (e) {
+          var img = e.target;
+          if (img && img.tagName === 'IMG') {
+            var media = img.closest('.tile-media');
+            if (media) media.remove();
+          }
+        }, true);
+
         (function () {
           var tiles = [].slice.call(document.querySelectorAll('.tile'));
           var calEl = document.getElementById('calendar');
           var hintEl = document.getElementById('cal-hint');
+          var emptyEl = document.getElementById('empty');
+          var resultsEl = document.getElementById('results');
 
           var counts = {};
           tiles.forEach(function (t) {
@@ -333,8 +576,9 @@ app.get("/", (req, res) => {
             h += '<button type="button" class="cal-nav" data-nav="-1">‹</button>';
             h += '<span class="cal-title">' + MONTHS[view.m] + ' ' + view.y + '</span>';
             h += '<button type="button" class="cal-nav" data-nav="1">›</button>';
-            h += '</div><div class="cal-grid">';
+            h += '</div><div class="cal-weekdays">';
             for (var i = 0; i < 7; i++) h += '<div class="cal-wd">' + WD[i] + '</div>';
+            h += '</div><div class="cal-grid">';
             for (var e = 0; e < lead; e++) h += '<span class="cal-cell empty"></span>';
             for (var d = 1; d <= dim; d++) {
               var ci = iso(view.y, view.m, d);
@@ -346,7 +590,7 @@ app.get("/", (req, res) => {
               h += '<button type="button" class="' + cls + '" data-date="' + ci + '"' + (n ? '' : ' disabled') + '>' + d + (n ? '<span class="cal-dot"></span>' : '') + '</button>';
             }
             h += '</div><div class="cal-actions">';
-            h += '<button type="button" id="cal-today">Heute</button>';
+            h += '<button type="button" id="cal-today" class="' + (selected === todayIso ? 'active' : '') + '">Heute</button>';
             h += '<button type="button" id="cal-all" class="' + (selected ? '' : 'active') + '">Alle Termine</button>';
             h += '</div>';
             calEl.innerHTML = h;
@@ -363,6 +607,8 @@ app.get("/", (req, res) => {
             hintEl.textContent = selected
               ? human(selected) + ' – ' + total + (total === 1 ? ' Termin' : ' Termine')
               : 'Alle Termine – ' + total;
+            if (emptyEl) emptyEl.hidden = total !== 0;
+            if (resultsEl) resultsEl.style.display = total === 0 ? 'none' : '';
           }
 
           calEl.addEventListener('click', function (evt) {
@@ -389,6 +635,23 @@ app.get("/", (req, res) => {
 
           render();
           apply();
+        })();
+
+        (function () {
+          var tt = document.getElementById('theme-toggle');
+          if (!tt) return;
+          var mq = window.matchMedia('(prefers-color-scheme: dark)');
+          function current() {
+            return document.documentElement.getAttribute('data-theme') || (mq.matches ? 'dark' : 'light');
+          }
+          function label() { tt.textContent = current() === 'dark' ? 'Light' : 'Dark'; }
+          tt.addEventListener('click', function () {
+            var next = current() === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            try { localStorage.setItem('theme', next); } catch (e) {}
+            label();
+          });
+          label();
         })();
         </script>
       </body>
