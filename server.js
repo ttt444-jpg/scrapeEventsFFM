@@ -395,6 +395,27 @@ app.get("/", (req, res) => {
           .vf-count { color: var(--fg-faint); }
           .vf-chip.active .vf-count { color: #101410; opacity: 0.55; }
 
+          /* ---- Suchfeld ---- */
+          .search-box { margin-top: 20px; }
+          .search-input {
+            width: 100%;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            letter-spacing: 0.04em;
+            color: var(--fg);
+            background: var(--card);
+            border: 1px solid var(--line-strong);
+            border-radius: 999px;
+            padding: 10px 16px;
+            outline: none;
+          }
+          .search-input::placeholder {
+            color: var(--fg-faint);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+          }
+          .search-input:focus { border-color: var(--mint); }
+
           /* ---- Tiles ---- */
           .tiles {
             display: grid;
@@ -539,6 +560,11 @@ app.get("/", (req, res) => {
                     .join("")}
                 </div>
               </div>
+
+              <div class="search-box">
+                <div class="vf-label">Suche</div>
+                <input type="search" id="search" class="search-input" placeholder="Act, Titel, Genre …" autocomplete="off" spellcheck="false">
+              </div>
             </div>
 
             <div class="results-col">
@@ -611,14 +637,32 @@ app.get("/", (req, res) => {
           var emptyEl = document.getElementById('empty');
           var resultsEl = document.getElementById('results');
           var venueFilterEl = document.getElementById('venue-filter');
+          var searchEl = document.getElementById('search');
 
           var selectedVenue = '';
+          var query = '';
 
-          // Termine pro Tag zaehlen, eingeschraenkt auf die gewaehlte Location
+          // Durchsuchbaren Text pro Kachel einmalig vorberechnen
+          tiles.forEach(function (t) {
+            var parts = [];
+            ['.tile-title', '.tile-excerpt', '.venue'].forEach(function (sel) {
+              var el = t.querySelector(sel);
+              if (el) parts.push(el.textContent);
+            });
+            t._text = parts.join(' ').toLowerCase().replace(/\s+/g, ' ');
+          });
+
+          function matchesFilter(t) {
+            if (selectedVenue && t.getAttribute('data-site') !== selectedVenue) return false;
+            if (query && t._text.indexOf(query) === -1) return false;
+            return true;
+          }
+
+          // Termine pro Tag zaehlen – eingeschraenkt auf Location + Suche
           function tileCounts() {
             var c = {};
             tiles.forEach(function (t) {
-              if (selectedVenue && t.getAttribute('data-site') !== selectedVenue) return;
+              if (!matchesFilter(t)) return;
               var d = t.getAttribute('data-date');
               if (d) c[d] = (c[d] || 0) + 1;
             });
@@ -676,15 +720,18 @@ app.get("/", (req, res) => {
             var total = 0;
             tiles.forEach(function (t) {
               var okDate = !selected || t.getAttribute('data-date') === selected;
-              var okVenue = !selectedVenue || t.getAttribute('data-site') === selectedVenue;
-              var show = okDate && okVenue;
+              var show = okDate && matchesFilter(t);
               t.style.display = show ? '' : 'none';
               if (show) total++;
             });
             var scope = selected ? human(selected) : 'Alle Termine';
             if (selectedVenue) scope += ' · ' + selectedVenue;
+            if (query) scope += ' · "' + searchEl.value.trim() + '"';
             hintEl.textContent = scope + ' – ' + total + (total === 1 ? ' Termin' : ' Termine');
-            if (emptyEl) emptyEl.hidden = total !== 0;
+            if (emptyEl) {
+              emptyEl.hidden = total !== 0;
+              emptyEl.textContent = query ? 'Nichts gefunden' : 'Keine Termine an diesem Tag';
+            }
             if (resultsEl) resultsEl.style.display = total === 0 ? 'none' : '';
           }
 
@@ -719,6 +766,15 @@ app.get("/", (req, res) => {
               [].forEach.call(venueFilterEl.querySelectorAll('.vf-chip'), function (c) {
                 c.classList.toggle('active', (c.getAttribute('data-venue') || '') === selectedVenue);
               });
+              counts = tileCounts();
+              render();
+              apply();
+            });
+          }
+
+          if (searchEl) {
+            searchEl.addEventListener('input', function () {
+              query = searchEl.value.trim().toLowerCase().replace(/\s+/g, ' ');
               counts = tileCounts();
               render();
               apply();
