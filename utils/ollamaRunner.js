@@ -34,7 +34,8 @@ export async function ocrFlyer(imageBuffer) {
         role: "user",
         content:
           "Transkribiere den kompletten sichtbaren Text auf diesem Veranstaltungsflyer " +
-          "wortwörtlich, Zeile für Zeile (inklusive Datum, Wochentag, Uhrzeit und Acts). " +
+          "wortwörtlich, Zeile für Zeile (inklusive Datum, Wochentag, Acts sowie allen " +
+          "Uhrzeiten – besonders Einlass und Beginn). " +
           "Gib ausschließlich den Text zurück, keine Beschreibung. Kein Text im Bild: KEIN_TEXT",
         images: [imageBase64],
       },

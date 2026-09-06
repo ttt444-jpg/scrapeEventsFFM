@@ -2,6 +2,7 @@ import fs from "node:fs";
 import puppeteer from "puppeteer";
 import { utils_truncate } from "./utils.js";
 import { ocrFlyer } from "./ollamaRunner.js";
+import { parseTimes } from "./parseTimes.js";
 
 // Manche Locations veröffentlichen ihr Programm nur als Instagram-Posts
 // (meist Flyer-Bilder). Diese Helper rendert das Profil mit puppeteer, sammelt
@@ -262,6 +263,7 @@ function parseFlyer(text, post, author, site, anchor) {
           date: resolveDate(day, month, year, anchor),
           title: utils_truncate(headline(chunk), 90),
           excerpt: utils_truncate(chunk, 160),
+          ...parseTimes(chunk),
         });
       });
       if (out.length) return out;
@@ -278,6 +280,7 @@ function parseFlyer(text, post, author, site, anchor) {
       date: resolveDate(found.day, found.month, found.year, anchor),
       title: author || utils_truncate(headline(stripLeadingDate(clean)), 90) || site,
       excerpt: utils_truncate(clean, 160),
+      ...parseTimes(clean),
     },
   ];
 }

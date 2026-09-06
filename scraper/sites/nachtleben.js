@@ -1,4 +1,5 @@
 import { loadPage } from "../scraperBase.js";
+import { parseTimes } from "../../utils/parseTimes.js";
 
 export async function scrapeNachtleben() {
   const url = "https://www.batschkapp.net/nachtleben";
@@ -23,11 +24,16 @@ export async function scrapeNachtleben() {
 
     const rubrik = $(el).find(".rubrik").text().trim();
 
+    // "Beginn: 20:00 | Einlass: 19:00"
+    const { doors, start } = parseTimes($(el).find(".beginn").text());
+
     if (rubrik === "Konzert") {
       events.push({
         date,
         title,
         excerpt,
+        doors,
+        start,
         image,
         link,
       });

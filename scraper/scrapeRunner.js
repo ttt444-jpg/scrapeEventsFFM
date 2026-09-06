@@ -56,6 +56,9 @@ export async function runScraper() {
       if (siteData && Array.isArray(siteData.events)) {
         for (const ev of siteData.events) {
           ev.date = formatEventDate(ev.date);
+          // Zeitfelder vereinheitlichen, damit das Frontend sich darauf verlassen kann
+          ev.doors = ev.doors || "";
+          ev.start = ev.start || "";
         }
         // Vergangene Termine gar nicht erst speichern (ohne Datum bleibt)
         siteData.events = siteData.events.filter((ev) => {

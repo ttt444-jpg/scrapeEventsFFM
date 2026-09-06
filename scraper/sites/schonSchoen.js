@@ -1,5 +1,6 @@
 import { loadPage } from "../scraperBase.js";
 import { utils_truncate } from "../../utils/utils.js";
+import { parseTimes } from "../../utils/parseTimes.js";
 
 const BASE = "https://www.schon-schoen.de/";
 
@@ -54,11 +55,16 @@ export async function scrapeSchonSchoen() {
     let excerpt = "";
     let description = "";
     let image = null;
+    let doors = "";
+    let start = "";
 
     try {
       const detail$ = await loadPage(eventLink);
 
       title = detail$("h1").first().text().trim() || stub.fallbackTitle;
+
+      // Einlass-/Beginn-Zeile steht im Text und wird sonst als NOISE verworfen
+      ({ doors, start } = parseTimes(detail$(".ce_text").text()));
 
       // Event-Foto: erstes echtes Bild aus dem Foto-Ordner (Logos ausklammern)
       const photo = detail$("img")
@@ -83,6 +89,8 @@ export async function scrapeSchonSchoen() {
       title,
       excerpt,
       description,
+      doors,
+      start,
       image,
       link: eventLink,
     });

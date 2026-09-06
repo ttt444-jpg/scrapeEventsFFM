@@ -1,5 +1,6 @@
 import { loadPage } from "../scraperBase.js";
 import pLimit from "p-limit";
+import { parseTimes } from "../../utils/parseTimes.js";
 
 export async function scrapeSchlachthof() {
   const url = "https://schlachthof-wiesbaden.de/";
@@ -57,6 +58,8 @@ export async function scrapeSchlachthof() {
     tasks.push(
       limit(async () => {
         let image = null;
+        let doors = "";
+        let start = "";
 
         if (link) {
           const detailUrl = link.startsWith("http")
@@ -68,12 +71,13 @@ export async function scrapeSchlachthof() {
             if (image && !image.startsWith("http")) {
               image = url + image.replace(/^\//, "");
             }
+            ({ doors, start } = parseTimes($$("main").text() || $$("body").text()));
           } catch {
-            /* Bild ist optional */
+            /* Bild/Zeiten sind optional */
           }
         }
 
-        return { date, title, excerpt, link, image };
+        return { date, title, excerpt, doors, start, link, image };
       }),
     );
   }

@@ -3,6 +3,8 @@ import { ocrFromUrl } from "../../utils/ocr.js";
 
 // Cave-Events haben kein eigenes Vorschaubild – stattdessen das Club-Logo.
 const CAVE_LOGO = "https://www.the-cave.de/Flyer/Logo10002.gif";
+// Im Cave beginnt es immer um 22:00 Uhr (steht nicht auf dem Flyer).
+const CAVE_START = "22:00";
 
 export async function scrapeCave() {
   const today = new Date();
@@ -56,7 +58,15 @@ export async function scrapeCave() {
           .trim()
       : "";
 
-    events.push({ date, title, excerpt, link: url, image: CAVE_LOGO });
+    events.push({
+      date,
+      title,
+      excerpt,
+      doors: "",
+      start: CAVE_START,
+      link: url,
+      image: CAVE_LOGO,
+    });
   }
   return {
         site: "Cave",

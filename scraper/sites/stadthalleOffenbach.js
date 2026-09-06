@@ -1,6 +1,7 @@
 import { loadPage } from "../scraperBase.js";
 import * as cheerio from "cheerio";
 import { utils_truncate } from "../../utils/utils.js";
+import { parseTimes } from "../../utils/parseTimes.js";
 
 
 export async function scrapeStadthalleOffenbach() {
@@ -23,11 +24,21 @@ export async function scrapeStadthalleOffenbach() {
     let link = root.find(".SP-Teaser__headline__text").attr("href") || null;
     if (link) link = new URL(link, url).href;
 
-    // Datum + Zeit
+    // Datum + Zeit (z.B. "So. 13.09.2026, 20:00 Uhr")
     const date = root.find(".SP-Scheduling__date").text().trim();
 
-    // Beschreibung
-    const excerpt = utils_truncate(root.find(".SP-Teaser__abstract").text().trim(), 100);
+    // Beschreibung – Einlass/Beginn stehen als Zeile am Anfang mit drin
+    const abstract = root.find(".SP-Teaser__abstract").text().trim();
+    const { doors, start } = parseTimes(`${date} ${abstract}`);
+    const excerpt = utils_truncate(
+      abstract
+        .replace(
+          /^\s*(?:(?:einlass|beginn|doors?|start)\s*:?\s*\d{1,2}[.:]\d{2}\s*uhr\s*[|/·,–—-]*\s*)+/i,
+          "",
+        )
+        .trim(),
+      100,
+    );
 
     // Bild
     let image = null;
@@ -53,6 +64,8 @@ export async function scrapeStadthalleOffenbach() {
         title,
         date,
         excerpt,
+        doors,
+        start,
         link,
         image,
       });

@@ -1,4 +1,5 @@
 import { loadPage } from "../scraperBase.js";
+import { parseTimes } from "../../utils/parseTimes.js";
 
 export async function scrapeDreikoenigskeller() {
   const baseUrl = "https://www.dreikoenigskeller.eu";
@@ -34,12 +35,16 @@ export async function scrapeDreikoenigskeller() {
       image = new URL(image, baseUrl).href;
     }
 
+    const { doors, start } = parseTimes(detailPage("article").text());
+
     if (!title.toUpperCase().includes("HOFKNEIPE") && !title.toUpperCase().includes("HOFFEST"))
     {
     events.push({
       date,
       title,
       excerpt,
+      doors,
+      start,
       link,
       image,
     });

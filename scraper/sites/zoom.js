@@ -1,4 +1,5 @@
 import { loadPage } from "../scraperBase.js";
+import { isoTime } from "../../utils/parseTimes.js";
 
 export async function scrapeZoom() {
   const url = "https://zoomfrankfurt.com/programm";
@@ -17,7 +18,13 @@ export async function scrapeZoom() {
         const title = json.name || "";
         const excerpt = json.description || "";
         const link = json.url || "";
-        const time = json.doorTime || "";
+        let doors = isoTime(json.doorTime);
+        let start = isoTime(json.startDate);
+        // Nur eine Zeit bekannt -> gilt als Start
+        if (doors && (!start || start === doors)) {
+          start = doors;
+          doors = "";
+        }
 
         // image kann String, Array oder ImageObject sein
         let rawImg = Array.isArray(json.image) ? json.image[0] : json.image;
@@ -28,7 +35,8 @@ export async function scrapeZoom() {
           date,
           title,
           excerpt,
-          time,
+          doors,
+          start,
           link,
           image
         });

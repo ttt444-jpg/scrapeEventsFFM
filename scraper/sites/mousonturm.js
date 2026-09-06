@@ -1,4 +1,5 @@
 import { loadPage } from "../scraperBase.js";
+import { parseTimes } from "../../utils/parseTimes.js";
 
 export async function scrapeMousonturm() {
   const url = "https://www.mousonturm.de/en/programm/spielplan/";
@@ -33,6 +34,8 @@ export async function scrapeMousonturm() {
           date: fullDate,
           title,
           excerpt,
+          doors: "",
+          start: "",
           link,
         });
       }
@@ -58,6 +61,14 @@ export async function scrapeMousonturm() {
       }
 
       event.image = imgUrl || null;
+
+      // Zeit steht als ".article-event__time" (engl. Seite, z.B. "3 pm")
+      const timeText =
+        detail$(".article-event__time").text().trim() ||
+        detail$(".article-event__meta, .article-header").text();
+      const { doors, start } = parseTimes(timeText);
+      event.doors = doors;
+      event.start = start;
 
     } catch (err) {
       console.error("Fehler beim Laden der Detailseite:", event.link, err);

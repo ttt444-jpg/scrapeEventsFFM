@@ -454,6 +454,15 @@ app.get("/", (req, res) => {
           .tile-eyebrow a { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 5px 10px; }
           .tile-eyebrow .venue { color: var(--fg); }
 
+          .tile-time {
+            font-family: var(--font-mono);
+            font-size: 10.5px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--fg-dim);
+            margin: 0 0 8px;
+          }
+
           .tile-media {
             display: block;
             margin: 0 -16px 14px;
@@ -597,6 +606,16 @@ app.get("/", (req, res) => {
                           : esc(ev.title)
                       }
                     </h2>
+                    ${
+                      ev.doors || ev.start
+                        ? `<div class="tile-time">${[
+                            ev.doors ? `Einlass ${esc(ev.doors)}` : "",
+                            ev.start ? `Beginn ${esc(ev.start)}` : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}</div>`
+                        : ""
+                    }
                     ${ev.excerpt ? `<p class="tile-excerpt">${esc(ev.excerpt)}</p>` : ""}
                   </article>
                 `,

@@ -1,4 +1,5 @@
 import { loadPage } from "../scraperBase.js";
+import { parseTimes } from "../../utils/parseTimes.js";
 
 export async function scrapeHafen2() {
   const url = "https://www.hafen2.net/1-0-Programm.html?show=page&type=art_kat_1";
@@ -40,15 +41,23 @@ export async function scrapeHafen2() {
       ? new URL("index.php?tinymceimg=" + imgMatch[1], url).href
       : null;
 
+    // "29.08., 19:00 Uhr, 10 Euro" – eine Uhrzeit, als Start gewertet
+    const { doors, start } = parseTimes(locationText);
+
     // --- Excerpt (Kurzbeschreibung) ---
-    // Hafen2 hat keinen echten Untertitel → wir nehmen die location-Zeile
-    const excerpt = locationText;
+    // Hafen2 hat keinen echten Untertitel → location-Zeile ohne das
+    // führende "DD.MM., HH:MM Uhr" (steht schon in Datum/Zeit oben).
+    const excerpt = locationText
+      .replace(/^\s*\d{1,2}\.\d{1,2}\.?\s*,?\s*\d{1,2}[:.]\d{2}\s*uhr\s*,?\s*/i, "")
+      .trim();
 
     events.push({
       date,
       dayName,
       title,
       excerpt,
+      doors,
+      start,
       link,
       image
     });
