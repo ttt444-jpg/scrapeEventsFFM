@@ -45,10 +45,16 @@ export async function scrapeHafen2() {
     const { doors, start } = parseTimes(locationText);
 
     // --- Excerpt (Kurzbeschreibung) ---
-    // Hafen2 hat keinen echten Untertitel → location-Zeile ohne das
-    // führende "DD.MM., HH:MM Uhr" (steht schon in Datum/Zeit oben).
+    // Hafen2 hat keinen echten Untertitel → location-Zeile ohne jegliches
+    // "DD.MM., HH:MM Uhr" (steht schon in Datum/Zeit oben; taucht auch mitten
+    // im Text auf, z.B. "Halle, 10.10., 20:00 Uhr, 15 Euro").
     const excerpt = locationText
-      .replace(/^\s*\d{1,2}\.\d{1,2}\.?\s*,?\s*\d{1,2}[:.]\d{2}\s*uhr\s*,?\s*/i, "")
+      .replace(
+        /\d{1,2}\.\d{1,2}\.(?:\d{2,4})?\s*,?\s*\d{1,2}[:.]\d{2}\s*uhr\s*,?/gi,
+        " ",
+      )
+      .replace(/\s{2,}/g, " ")
+      .replace(/^[\s,]+|[\s,]+$/g, "")
       .trim();
 
     events.push({
