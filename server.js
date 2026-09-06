@@ -57,8 +57,16 @@ app.get("/", (req, res) => {
   const sources = [...new Map(results.map((s) => [s.site, s.url]))]
     .map(([name, url]) => ({ name, url }))
     .sort((a, b) => a.name.localeCompare(b.name, "de"));
+
+  // Locations mit (kommenden) Terminen – Basis fuer den Schnellfilter
+  const venueCounts = allEvents.reduce((m, ev) => {
+    m[ev._site] = (m[ev._site] || 0) + 1;
+    return m;
+  }, {});
+  const venues = Object.keys(venueCounts).sort((a, b) => a.localeCompare(b, "de"));
+
   const eventCount = allEvents.length;
-  const venueCount = sources.length;
+  const venueCount = venues.length;
 
   res.send(`
     <!doctype html>
@@ -135,7 +143,7 @@ app.get("/", (req, res) => {
 
           @media (prefers-reduced-motion: no-preference) {
             body, .site-header, .calendar, .tile, .cal-nav,
-            .cal-actions button, .theme-toggle, .sources a {
+            .cal-actions button, .theme-toggle, .sources a, .vf-chip {
               transition:
                 background-color .4s var(--ease-out),
                 border-color .4s var(--ease-out),
@@ -349,8 +357,43 @@ app.get("/", (req, res) => {
             letter-spacing: 0.05em;
             text-transform: uppercase;
             color: var(--fg-dim);
-            margin: 18px 2px 0;
+            margin: 20px 2px 0;
           }
+
+          /* ---- Location-Schnellfilter ---- */
+          .venue-filter { margin-top: 20px; }
+          .vf-label {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            color: var(--fg-faint);
+            margin-bottom: 12px;
+          }
+          .vf-list { display: flex; flex-wrap: wrap; gap: 6px; }
+          .vf-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--font-mono);
+            font-size: 10.5px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--fg-dim);
+            background: transparent;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 6px 10px;
+            cursor: pointer;
+          }
+          .vf-chip:hover { color: var(--fg); border-color: var(--line-strong); }
+          .vf-chip.active {
+            background: var(--mint);
+            color: #101410;
+            border-color: var(--mint);
+          }
+          .vf-count { color: var(--fg-faint); }
+          .vf-chip.active .vf-count { color: #101410; opacity: 0.55; }
 
           /* ---- Tiles ---- */
           .tiles {
@@ -483,6 +526,19 @@ app.get("/", (req, res) => {
             <div class="cal-col">
               <div id="calendar" class="calendar"></div>
               <div id="cal-hint" class="cal-hint"></div>
+
+              <div class="venue-filter">
+                <div class="vf-label">Locations</div>
+                <div class="vf-list" id="venue-filter">
+                  <button type="button" class="vf-chip active" data-venue="">Alle</button>
+                  ${venues
+                    .map(
+                      (v) =>
+                        `<button type="button" class="vf-chip" data-venue="${esc(v)}">${esc(v)}<span class="vf-count">${venueCounts[v]}</span></button>`,
+                    )
+                    .join("")}
+                </div>
+              </div>
             </div>
 
             <div class="results-col">
@@ -490,7 +546,7 @@ app.get("/", (req, res) => {
                 ${allEvents
                   .map(
                     (ev, i) => `
-                  <article class="tile" data-date="${ev._iso}" style="animation-delay:${Math.min(i * 35, 420)}ms">
+                  <article class="tile" data-date="${ev._iso}" data-site="${esc(ev._site)}" style="animation-delay:${Math.min(i * 35, 420)}ms">
                     <div class="tile-eyebrow">
                       <a href="${esc(ev._siteUrl)}" target="_blank" rel="noopener">
                         ${ev.date ? `<span class="tile-date">${esc(ev.date)}</span>` : ""}
@@ -554,12 +610,21 @@ app.get("/", (req, res) => {
           var hintEl = document.getElementById('cal-hint');
           var emptyEl = document.getElementById('empty');
           var resultsEl = document.getElementById('results');
+          var venueFilterEl = document.getElementById('venue-filter');
 
-          var counts = {};
-          tiles.forEach(function (t) {
-            var d = t.getAttribute('data-date');
-            if (d) counts[d] = (counts[d] || 0) + 1;
-          });
+          var selectedVenue = '';
+
+          // Termine pro Tag zaehlen, eingeschraenkt auf die gewaehlte Location
+          function tileCounts() {
+            var c = {};
+            tiles.forEach(function (t) {
+              if (selectedVenue && t.getAttribute('data-site') !== selectedVenue) return;
+              var d = t.getAttribute('data-date');
+              if (d) c[d] = (c[d] || 0) + 1;
+            });
+            return c;
+          }
+          var counts = tileCounts();
 
           var MONTHS = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
           var WD = ['Mo','Di','Mi','Do','Fr','Sa','So'];
@@ -610,14 +675,15 @@ app.get("/", (req, res) => {
           function apply() {
             var total = 0;
             tiles.forEach(function (t) {
-              var d = t.getAttribute('data-date');
-              var show = !selected || d === selected;
+              var okDate = !selected || t.getAttribute('data-date') === selected;
+              var okVenue = !selectedVenue || t.getAttribute('data-site') === selectedVenue;
+              var show = okDate && okVenue;
               t.style.display = show ? '' : 'none';
               if (show) total++;
             });
-            hintEl.textContent = selected
-              ? human(selected) + ' – ' + total + (total === 1 ? ' Termin' : ' Termine')
-              : 'Alle Termine – ' + total;
+            var scope = selected ? human(selected) : 'Alle Termine';
+            if (selectedVenue) scope += ' · ' + selectedVenue;
+            hintEl.textContent = scope + ' – ' + total + (total === 1 ? ' Termin' : ' Termine');
             if (emptyEl) emptyEl.hidden = total !== 0;
             if (resultsEl) resultsEl.style.display = total === 0 ? 'none' : '';
           }
@@ -643,6 +709,21 @@ app.get("/", (req, res) => {
             var cell = evt.target.closest('.cal-cell[data-date]');
             if (cell && !cell.disabled) { selected = cell.getAttribute('data-date'); render(); apply(); }
           });
+
+          if (venueFilterEl) {
+            venueFilterEl.addEventListener('click', function (evt) {
+              var chip = evt.target.closest('.vf-chip');
+              if (!chip) return;
+              var v = chip.getAttribute('data-venue') || '';
+              selectedVenue = v === selectedVenue ? '' : v;
+              [].forEach.call(venueFilterEl.querySelectorAll('.vf-chip'), function (c) {
+                c.classList.toggle('active', (c.getAttribute('data-venue') || '') === selectedVenue);
+              });
+              counts = tileCounts();
+              render();
+              apply();
+            });
+          }
 
           render();
           apply();
