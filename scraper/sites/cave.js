@@ -25,19 +25,35 @@ export async function scrapeCave() {
 
   const events = [];
 
-  const dateRegex = /^(MO|DI|MI|DO|FR|SA|SO)\s+\d{2}\.\d{2}/i;
+  // Zeilenanfang: "FR 04.09" bzw. "FR 04.09.26" – der Rest der Zeile ist
+  // "Titel [ - Beschreibung]".
+  const dateRegex = /^(?:MO|DI|MI|DO|FR|SA|SO)\s+\d{1,2}\.\d{1,2}\.?(?:\d{2,4})?/i;
 
+  // Das OCR bricht jeden Eintrag auf mehrere Zeilen um. Fortsetzungszeilen
+  // (kein Datum am Anfang) an den vorherigen Eintrag anhängen.
+  const entries = [];
   for (const line of lines) {
-    if (dateRegex.test(line)) {
-      const [date, rest] = line.split(/\s+(?=[A-ZÄÖÜ])/);
-      const [title, excerptStart] = rest.split(" - ");
-      events.push({
-        date: date.trim(),
-        title: title.trim(),
-        excerpt: excerptStart ? excerptStart.trim() : "",
-        link: url,
-      });
-    }
+    if (dateRegex.test(line)) entries.push(line);
+    else if (entries.length) entries[entries.length - 1] += " " + line;
+  }
+
+  for (const entry of entries) {
+    const dateMatch = entry.match(dateRegex);
+    const date = dateMatch[0].trim();
+    const rest = entry.slice(dateMatch[0].length).replace(/\s+/g, " ").trim();
+
+    // Das erste " - " / " – " trennt Titel und Beschreibung; alles Weitere
+    // (auch spätere " - ") bleibt Teil der Beschreibung.
+    const sep = rest.match(/\s+[–—-]\s+/);
+    const title = (sep ? rest.slice(0, sep.index) : rest).trim();
+    const excerpt = sep
+      ? rest
+          .slice(sep.index + sep[0].length)
+          .replace(/\s*>\s*/g, " – ") // ">DJ ..." -> " – DJ ..."
+          .trim()
+      : "";
+
+    events.push({ date, title, excerpt, link: url });
   }
   return {
         site: "Cave",
