@@ -1,0 +1,17 @@
+[Unit]
+Description=scrapeEventsFFM web server (Frankfurt/Offenbach concert listings)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/scrapeEventsFFM
+ExecStart=/usr/bin/node index.js --no-scrape
+Restart=on-failure
+RestartSec=5
+Environment=NODE_ENV=production
+# Server bindet 0.0.0.0:3000; von aussen per ufw gesperrt, nur ueber den
+# Reverse-Proxy (Nginx Proxy Manager) erreichbar.
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,10 @@
+[Unit]
+Description=Run scrapeEventsFFM scrape once a day
+
+[Timer]
+OnCalendar=*-*-* 05:00:00
+Persistent=true
+RandomizedDelaySec=900
+
+[Install]
+WantedBy=timers.target

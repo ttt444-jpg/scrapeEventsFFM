@@ -1,0 +1,12 @@
+[Unit]
+Description=scrapeEventsFFM daily scrape (rebuilds results.json, then restarts server)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/scrapeEventsFFM
+ExecStart=/usr/bin/node scrape-once.js
+ExecStartPost=/bin/systemctl restart scrapeeventsffm.service
+TimeoutStartSec=1800
+Environment=NODE_ENV=production
