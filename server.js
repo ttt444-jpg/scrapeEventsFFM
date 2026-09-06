@@ -1,5 +1,6 @@
 import express from "express";
 import { results } from "./data.js";
+import { venueAddress } from "./utils/venues.js";
 
 const app = express();
 
@@ -451,8 +452,9 @@ app.get("/", (req, res) => {
             color: var(--fg-dim);
             margin-bottom: 12px;
           }
-          .tile-eyebrow a { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 5px 10px; }
           .tile-eyebrow .venue { color: var(--fg); }
+          .tile-date { color: var(--fg-dim); cursor: pointer; }
+          .tile-date:hover { color: var(--fg); text-decoration: none; }
 
           .tile-time {
             font-family: var(--font-mono);
@@ -484,7 +486,7 @@ app.get("/", (req, res) => {
             line-height: 1.22;
             margin: 0 0 6px;
           }
-          .tile-title a:hover { text-decoration: underline; text-underline-offset: 3px; }
+          .tile-title a:hover { text-decoration: none; }
 
           .tile-excerpt { font-size: 13px; line-height: 1.45; color: var(--fg-dim); }
 
@@ -583,10 +585,21 @@ app.get("/", (req, res) => {
                     (ev, i) => `
                   <article class="tile" data-date="${ev._iso}" data-site="${esc(ev._site)}" style="animation-delay:${Math.min(i * 35, 420)}ms">
                     <div class="tile-eyebrow">
-                      <a href="${esc(ev._siteUrl)}" target="_blank" rel="noopener">
-                        ${ev.date ? `<span class="tile-date">${esc(ev.date)}</span>` : ""}
-                        <span class="venue">${esc(ev._site)}</span>
-                      </a>
+                      ${
+                        ev.date
+                          ? `<a class="tile-date" href="/event.ics?${esc(
+                              new URLSearchParams({
+                                title: [ev.title, ev._site]
+                                  .filter(Boolean)
+                                  .join(" // "),
+                                date: ev._iso,
+                                start: ev.start || "",
+                                loc: venueAddress(ev._site),
+                              }).toString(),
+                            )}" title="Als Kalendertermin speichern">${esc(ev.date)}</a>`
+                          : ""
+                      }
+                      <a class="venue" href="${esc(ev._siteUrl)}" target="_blank" rel="noopener">${esc(ev._site)}</a>
                     </div>
 
                     ${
@@ -600,11 +613,7 @@ app.get("/", (req, res) => {
                     }
 
                     <h2 class="tile-title">
-                      ${
-                        ev.link
-                          ? `<a href="${esc(ev.link)}" target="_blank" rel="noopener">${esc(ev.title)}</a>`
-                          : esc(ev.title)
-                      }
+                      <a href="${esc(ev.link || ev._siteUrl)}" target="_blank" rel="noopener">${esc(ev.title)}</a>
                     </h2>
                     ${
                       ev.doors || ev.start
@@ -668,7 +677,7 @@ app.get("/", (req, res) => {
               var el = t.querySelector(sel);
               if (el) parts.push(el.textContent);
             });
-            t._text = parts.join(' ').toLowerCase().replace(/\s+/g, ' ');
+            t._text = parts.join(' ').toLowerCase().replace(/\\s+/g, ' ');
           });
 
           function matchesFilter(t) {
@@ -793,7 +802,7 @@ app.get("/", (req, res) => {
 
           if (searchEl) {
             searchEl.addEventListener('input', function () {
-              query = searchEl.value.trim().toLowerCase().replace(/\s+/g, ' ');
+              query = searchEl.value.trim().toLowerCase().replace(/\\s+/g, ' ');
               counts = tileCounts();
               render();
               apply();
@@ -826,8 +835,90 @@ app.get("/", (req, res) => {
   `);
 });
 
+// Kalendertermin (.ics) fuer einen Event – Klick auf das Datum in der Kachel.
+// Beginn = ?start (HH:MM), Ende = +3h; ohne Zeit ein ganztaegiger Termin.
+app.get("/event.ics", (req, res) => {
+  const title = String(req.query.title || "").slice(0, 300) || "Termin";
+  const loc = String(req.query.loc || "").slice(0, 300);
+  const date = String(req.query.date || "");
+  const start = String(req.query.start || "");
 
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return res.status(400).send("bad date");
 
+  const pad = (n) => String(n).padStart(2, "0");
+  const stamp = (d) =>
+    `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(
+      d.getUTCHours(),
+    )}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
+  const local = (d) =>
+    `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(
+      d.getHours(),
+    )}${pad(d.getMinutes())}00`;
+  const icsEsc = (s) =>
+    String(s)
+      .replace(/\\/g, "\\\\")
+      .replace(/[;,]/g, "\\$&")
+      .replace(/\r?\n/g, "\\n");
+
+  const [Y, M, D] = date.split("-").map(Number);
+  const hm = /^(\d{1,2}):(\d{2})$/.exec(start);
+
+  let dtStart;
+  let dtEnd;
+  if (hm) {
+    const s = new Date(Y, M - 1, D, Number(hm[1]), Number(hm[2]));
+    const e = new Date(s.getTime() + 3 * 60 * 60 * 1000);
+    dtStart = `DTSTART:${local(s)}`;
+    dtEnd = `DTEND:${local(e)}`;
+  } else {
+    const e = new Date(Y, M - 1, D + 1);
+    dtStart = `DTSTART;VALUE=DATE:${Y}${pad(M)}${pad(D)}`;
+    dtEnd = `DTEND;VALUE=DATE:${e.getFullYear()}${pad(e.getMonth() + 1)}${pad(e.getDate())}`;
+  }
+
+  const uid = `${date}-${Buffer.from(title).toString("hex").slice(0, 24)}-${Date.now()}@ffm-events`;
+
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//FFM Events//DE",
+    "CALSCALE:GREGORIAN",
+    "BEGIN:VEVENT",
+    `UID:${uid}`,
+    `DTSTAMP:${stamp(new Date())}`,
+    dtStart,
+    dtEnd,
+    `SUMMARY:${icsEsc(title)}`,
+  ];
+  if (loc) lines.push(`LOCATION:${icsEsc(loc)}`);
+  lines.push("END:VEVENT", "END:VCALENDAR");
+
+  // Zeilen auf 75 Oktett falten (RFC 5545)
+  const fold = (l) => {
+    if (Buffer.byteLength(l) <= 75) return l;
+    const parts = [];
+    let cur = "";
+    for (const ch of l) {
+      if (Buffer.byteLength(cur + ch) > 74) {
+        parts.push(cur);
+        cur = " " + ch;
+      } else {
+        cur += ch;
+      }
+    }
+    parts.push(cur);
+    return parts.join("\r\n");
+  };
+
+  // Dateiname bewusst ASCII (Header-Encoding); der Termin-Inhalt bleibt UTF-8.
+  const fileName =
+    (title.replace(/[^\w \-]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 60) ||
+      "termin") + ".ics";
+
+  res.setHeader("Content-Type", "text/calendar; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+  res.send(lines.map(fold).join("\r\n") + "\r\n");
+});
 
 app.listen(3000, '0.0.0.0', () =>
   console.log("Server läuft auf http://0.0.0.0:3000")

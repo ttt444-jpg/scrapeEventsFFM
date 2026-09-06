@@ -1,6 +1,6 @@
 /node_modules
 temp_ocr.jpg
 temp_ocr.png
-#results.json
+results.json
 #ig-session.json
 login_url.txt
