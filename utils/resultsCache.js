@@ -3,7 +3,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 // Zwischenspeicher, damit der Server ohne erneutes Scrapen starten kann.
-const CACHE_FILE = path.join(
+export const CACHE_FILE = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
   "..",
   "results.json",

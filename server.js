@@ -1,6 +1,23 @@
+import fs from "fs";
 import express from "express";
 import { results } from "./data.js";
 import { venueAddress } from "./utils/venues.js";
+import { loadResultsCache, CACHE_FILE } from "./utils/resultsCache.js";
+
+// results.json bei jeder Anfrage neu laden, wenn sich die Datei geändert hat –
+// so wirkt ein erneuter Scrape sofort, ohne Server-Neustart.
+let _cacheMtime = 0;
+function refreshResults() {
+  try {
+    const m = fs.statSync(CACHE_FILE).mtimeMs;
+    if (m !== _cacheMtime) {
+      loadResultsCache(results);
+      _cacheMtime = m;
+    }
+  } catch {
+    /* keine Datei -> vorhandene In-Memory-Ergebnisse behalten */
+  }
+}
 
 const app = express();
 
@@ -35,6 +52,8 @@ const esc = (s = "") =>
   );
 
 app.get("/", (req, res) => {
+  refreshResults();
+
   // Alle Events zu einer flachen, nach Datum sortierten Liste zusammenführen.
   // Vergangene Termine werden zusaetzlich hier herausgefiltert, falls die
   // results.json noch veraltete Eintraege enthaelt (z. B. Cave-Monatsflyer).

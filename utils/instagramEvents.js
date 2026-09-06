@@ -256,14 +256,16 @@ function parseFlyer(text, post, author, site, anchor) {
         prev = day;
         const from = h.index + h[0].length;
         const to = i + 1 < hits.length ? hits[i + 1].index : clean.length;
-        const chunk = tidy(clean.slice(from, to));
+        const rawChunk = clean.slice(from, to);
+        const chunk = tidy(rawChunk);
         if (!chunk) return;
         out.push({
           ...base,
           date: resolveDate(day, month, year, anchor),
           title: utils_truncate(headline(chunk), 90),
           excerpt: utils_truncate(chunk, 160),
-          ...parseTimes(chunk),
+          // rawChunk, weil tidy() "START: 17 UHR" bereits entfernt
+          ...parseTimes(rawChunk),
         });
       });
       if (out.length) return out;
