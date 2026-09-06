@@ -11,6 +11,14 @@ function toISO(dateStr) {
   return `${yy}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
 }
 
+// Heutiges Datum als "YYYY-MM-DD" (lokale Zeit)
+function todayISO() {
+  const n = new Date();
+  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(
+    n.getDate(),
+  ).padStart(2, "0")}`;
+}
+
 // Minimales HTML-Escaping fuer Text- und Attributkontext
 const esc = (s = "") =>
   String(s).replace(
@@ -26,8 +34,10 @@ const esc = (s = "") =>
   );
 
 app.get("/", (req, res) => {
-  // Alle Events zu einer flachen, nach Datum sortierten Liste zusammenführen
-  // (vergangene Termine werden bereits beim Scrapen aussortiert)
+  // Alle Events zu einer flachen, nach Datum sortierten Liste zusammenführen.
+  // Vergangene Termine werden zusaetzlich hier herausgefiltert, falls die
+  // results.json noch veraltete Eintraege enthaelt (z. B. Cave-Monatsflyer).
+  const today = todayISO();
   const allEvents = results
     .flatMap((site) =>
       (site.events || []).map((ev) => ({
@@ -37,6 +47,7 @@ app.get("/", (req, res) => {
         _iso: toISO(ev.date),
       })),
     )
+    .filter((ev) => !ev._iso || ev._iso >= today) // ohne Datum bleibt drin
     .sort((a, b) => {
       if (!a._iso) return 1; // ohne Datum ans Ende
       if (!b._iso) return -1;
