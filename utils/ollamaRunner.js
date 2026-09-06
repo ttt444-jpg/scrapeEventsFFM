@@ -1,14 +1,34 @@
 import ollama from "ollama";
+import sharp from "sharp";
+
+const VISION_MODEL = process.env.OLLAMA_VISION_MODEL || "qwen2.5vl:3b";
+
+// Verkleinert das Flyer-Bild vor der OCR: weniger Vision-Tokens -> deutlich
+// schnellere Inferenz auf schwacher Hardware, ohne dass Text unlesbar wird.
+async function shrink(imageBuffer) {
+  try {
+    return await sharp(imageBuffer)
+      .rotate()
+      .resize(1024, 1024, { fit: "inside", withoutEnlargement: true })
+      .jpeg({ quality: 82 })
+      .toBuffer();
+  } catch {
+    return imageBuffer; // im Zweifel Originalbild schicken
+  }
+}
 
 // Liest den kompletten Text eines Veranstaltungsflyers per Vision-Modell aus.
 // Erwartet einen Buffer oder einen bereits base64-kodierten String.
 export async function ocrFlyer(imageBuffer) {
   const imageBase64 = Buffer.isBuffer(imageBuffer)
-    ? imageBuffer.toString("base64")
+    ? (await shrink(imageBuffer)).toString("base64")
     : imageBuffer;
 
-  const response = await ollama.chat({
-    model: "qwen2.5vl:7b",
+  // stream: true -> Antwort-Header kommen sofort; sonst killt undici die
+  // Verbindung nach 300s (headersTimeout), wenn die Generierung laenger braucht.
+  const stream = await ollama.chat({
+    model: VISION_MODEL,
+    stream: true,
     messages: [
       {
         role: "user",
@@ -21,6 +41,11 @@ export async function ocrFlyer(imageBuffer) {
     ],
   });
 
-  const text = response?.message?.content?.trim() || "";
+  let text = "";
+  for await (const part of stream) {
+    text += part?.message?.content || "";
+  }
+  text = text.trim();
+
   return /^KEIN_TEXT\b/i.test(text) ? "" : text;
 }

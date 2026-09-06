@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import puppeteer from "puppeteer";
 import { utils_truncate } from "./utils.js";
 import { ocrFlyer } from "./ollamaRunner.js";
@@ -103,6 +104,42 @@ export async function scrapeInstagramEvents({ handle, site, fallbackImage, fallb
 
 // --- Instagram -----------------------------------------------------------------
 
+// Instagram liefert Server-/Datacenter-IPs ohne Login nichts aus, sondern
+// leitet auf /accounts/login/ um. Wir injizieren daher die Session-Cookies
+// eines eingeloggten Browsers. Quelle (in dieser Reihenfolge):
+//   1. Env IG_SESSIONID (+ optional IG_DS_USER_ID, IG_CSRFTOKEN)
+//   2. Datei ig-session.json im Projektwurzelverzeichnis
+//      { "sessionid": "...", "ds_user_id": "...", "csrftoken": "..." }
+// sessionid holst du aus den DevTools (Application > Cookies > instagram.com)
+// eines Browsers, in dem du bei Instagram eingeloggt bist.
+function loadInstagramCookies() {
+  let raw = null;
+  if (process.env.IG_SESSIONID) {
+    raw = {
+      sessionid: process.env.IG_SESSIONID,
+      ds_user_id: process.env.IG_DS_USER_ID,
+      csrftoken: process.env.IG_CSRFTOKEN,
+    };
+  } else {
+    try {
+      raw = JSON.parse(
+        fs.readFileSync(new URL("../ig-session.json", import.meta.url), "utf8"),
+      );
+    } catch {
+      return [];
+    }
+  }
+  if (!raw || !raw.sessionid) return [];
+
+  const base = { domain: ".instagram.com", path: "/", secure: true };
+  const cookies = [{ name: "sessionid", value: String(raw.sessionid), httpOnly: true, ...base }];
+  if (raw.ds_user_id)
+    cookies.push({ name: "ds_user_id", value: String(raw.ds_user_id), ...base });
+  if (raw.csrftoken)
+    cookies.push({ name: "csrftoken", value: String(raw.csrftoken), ...base });
+  return cookies;
+}
+
 async function fetchRecentPosts(profile) {
   const browser = await puppeteer.launch({
     headless: true,
@@ -110,12 +147,24 @@ async function fetchRecentPosts(profile) {
   });
 
   try {
+    const cookies = loadInstagramCookies();
+    if (cookies.length) await browser.setCookie(...cookies);
+
     const page = await browser.newPage();
     await page.setUserAgent(
       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
         "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
     );
     await page.goto(profile, { waitUntil: "networkidle2", timeout: 40000 });
+
+    if (/\/accounts\/login/.test(page.url())) {
+      throw new Error(
+        cookies.length
+          ? "Instagram-Session abgelaufen – ig-session.json / IG_SESSIONID erneuern"
+          : "Instagram verlangt Login – ig-session.json bzw. IG_SESSIONID setzen",
+      );
+    }
+
     await page.waitForSelector('a[href*="/p/"] img', { timeout: 15000 });
 
     const accountName = (await page.title()).split(/\s*\(@/)[0].trim();

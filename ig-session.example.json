@@ -1,0 +1,6 @@
+{
+  "_comment": "Kopie nach ig-session.json (gitignored). Werte aus den Browser-DevTools eines eingeloggten Instagram-Tabs: Application > Cookies > https://www.instagram.com. Alternativ per Env IG_SESSIONID / IG_DS_USER_ID / IG_CSRFTOKEN.",
+  "sessionid": "",
+  "ds_user_id": "",
+  "csrftoken": ""
+}
