@@ -105,7 +105,7 @@ app.get("/", (req, res) => {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>FFM Events – Was läuft in Frankfurt</title>
+        <title>069 EVENTS</title>
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -582,7 +582,7 @@ app.get("/", (req, res) => {
       <body>
         <div class="wrap">
           <header class="site-header">
-            <span class="wordmark">FFM Events <i>/ Frankfurt</i></span>
+            <span class="wordmark">069 Events <i>/ Frankfurt</i></span>
             <button type="button" class="theme-toggle" id="theme-toggle">Dark</button>
           </header>
 
