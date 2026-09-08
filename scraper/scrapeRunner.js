@@ -2,6 +2,7 @@ import { results } from "../data.js";
 import { formatEventDate, eventDateISO } from "../utils/formatDate.js";
 import { saveResultsCache } from "../utils/resultsCache.js";
 import { appendScrapeLog } from "../utils/scrapeLog.js";
+import { mergeIchiIchiShows } from "./promoters/ichiIchi.js";
 
 // Heutiges Datum als "YYYY-MM-DD"
 function todayISO() {
@@ -75,8 +76,16 @@ export async function runScraper() {
     }
   }
 
+  // Veranstalter ichi ichi: Shows an wechselnden Orten, aber nur wenn sie
+  // nicht schon über einen Venue-Scraper erfasst sind.
+  try {
+    await mergeIchiIchiShows(results, today);
+  } catch (err) {
+    console.error("ichi ichi merge fehlgeschlagen:", err.message);
+  }
+
   // ⭐ Alphabetisch sortieren
-  results.sort((a, b) => a.site.localeCompare(b.site));
+  results.sort((a, b) => (a.site || "").localeCompare(b.site || ""));
 
   // Für Starts ohne Scraping (--no-scrape) zwischenspeichern
   saveResultsCache(results);

@@ -632,7 +632,7 @@ app.get("/", (req, res) => {
                                   .join(" // "),
                                 date: ev._iso,
                                 start: ev.start || "",
-                                loc: venueAddress(ev._site),
+                                loc: ev.address || venueAddress(ev._site),
                               }).toString(),
                             )}" title="Als Kalendertermin speichern">${esc(ev.date)}</a>`
                           : ""

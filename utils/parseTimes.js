@@ -41,7 +41,7 @@ export function parseTimes(text) {
   const t = String(text).replace(/\s+/g, " ");
 
   out.doors = labelled(t, "einlass|doors?|einlass\\s*ab");
-  out.start = labelled(t, "beginn|start|showtime|show|konzertbeginn");
+  out.start = labelled(t, "beginn|start|showtime|show|konzert(?:beginn)?|mus(?:ic|ik)");
 
   // Zeitspanne "19:00 - 22:00 Uhr" -> Start = erste Zeit
   if (!out.start) {
