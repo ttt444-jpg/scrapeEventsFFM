@@ -3,6 +3,7 @@ import express from "express";
 import { results } from "./data.js";
 import { venueAddress } from "./utils/venues.js";
 import { loadResultsCache, CACHE_FILE } from "./utils/resultsCache.js";
+import { readLastScrape } from "./utils/scrapeLog.js";
 
 // results.json bei jeder Anfrage neu laden, wenn sich die Datei geändert hat –
 // so wirkt ein erneuter Scrape sofort, ohne Server-Neustart.
@@ -87,6 +88,16 @@ app.get("/", (req, res) => {
 
   const eventCount = allEvents.length;
   const venueCount = venues.length;
+
+  // Letzter Scrape aus dem Protokoll (scrape.log)
+  const lastScrape = readLastScrape();
+  const lastScrapeStr = lastScrape
+    ? lastScrape.date.toLocaleString("de-DE", {
+        timeZone: "Europe/Berlin",
+        dateStyle: "medium",
+        timeStyle: "short",
+      })
+    : "";
 
   res.send(`
     <!doctype html>
@@ -547,6 +558,14 @@ app.get("/", (req, res) => {
             border-radius: 999px;
             padding: 6px 12px;
           }
+          .foot-meta {
+            margin-top: 20px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--fg-faint);
+          }
           .sources a:hover {
             color: var(--bg);
             background: var(--fg);
@@ -664,6 +683,11 @@ app.get("/", (req, res) => {
                 )
                 .join("")}
             </nav>
+            ${
+              lastScrapeStr
+                ? `<div class="foot-meta">Last update: ${esc(lastScrapeStr)}</div>`
+                : ""
+            }
           </footer>
         </div>
 

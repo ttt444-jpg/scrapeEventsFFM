@@ -1,6 +1,7 @@
 import { results } from "../data.js";
 import { formatEventDate, eventDateISO } from "../utils/formatDate.js";
 import { saveResultsCache } from "../utils/resultsCache.js";
+import { appendScrapeLog } from "../utils/scrapeLog.js";
 
 // Heutiges Datum als "YYYY-MM-DD"
 function todayISO() {
@@ -79,6 +80,7 @@ export async function runScraper() {
 
   // Für Starts ohne Scraping (--no-scrape) zwischenspeichern
   saveResultsCache(results);
+  appendScrapeLog(results);
 
   console.log("Scraping abgeschlossen");
 }
