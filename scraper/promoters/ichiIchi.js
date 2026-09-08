@@ -57,8 +57,8 @@ function normVenue(v) {
 // ichi-ichi-Venue-Bezeichnungen auf den tatsächlichen Ort abbilden.
 const VENUE_ALIASES = {
   dondorf: {
-    name: "Schirn Kunsthalle",
-    address: "Römerberg, 60311 Frankfurt am Main",
+    name: "Schirn Kunsthalle Dondorf",
+    address: "Zeppelinallee 13, 60325 Frankfurt am Main",
   },
 };
 
