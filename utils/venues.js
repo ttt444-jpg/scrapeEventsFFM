@@ -18,6 +18,7 @@ export const VENUE_ADDRESSES = {
   "Hafen 2": "Nordring 129, 63067 Offenbach am Main",
   "Stadthalle Offenbach": "Waldstraße 312, 63071 Offenbach am Main",
   "Schlachthof Wiesbaden": "Murnaustraße 1, 65189 Wiesbaden",
+  "Schirn Kunsthalle": "Römerberg, 60311 Frankfurt am Main",
 };
 
 export function venueAddress(site) {

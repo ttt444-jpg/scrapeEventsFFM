@@ -54,11 +54,26 @@ function normVenue(v) {
     .trim();
 }
 
+// ichi-ichi-Venue-Bezeichnungen auf den tatsächlichen Ort abbilden.
+const VENUE_ALIASES = {
+  dondorf: {
+    name: "Schirn Kunsthalle",
+    address: "Römerberg, 60311 Frankfurt am Main",
+  },
+};
+
 function displayVenue(v) {
-  return String(v || "")
+  const clean = String(v || "")
     .replace(/^\d+\s*OG\.?\s*/i, "")
     .replace(/\s+/g, " ")
     .trim();
+  const alias = VENUE_ALIASES[normVenue(clean)];
+  return alias ? alias.name : clean;
+}
+
+function venueAliasAddress(v) {
+  const alias = VENUE_ALIASES[normVenue(v)];
+  return alias ? alias.address : "";
 }
 
 // vorhandenes results-Objekt, dessen `site` zum Venue passt (oder null)
@@ -108,6 +123,7 @@ async function fetchShows() {
     const [venueRaw, city] = venueLine.split(/\s*\/\s*/);
     const venue = displayVenue(venueRaw);
     if (!venue) return;
+    const aliasAddr = venueAliasAddress(venueRaw);
 
     const $stack = $el.closest('[data-type="stack"]');
     let link = $stack.find('a[href*="loveyourartist"]').attr("href") || SHOWS_URL;
@@ -125,7 +141,7 @@ async function fetchShows() {
       link,
       image,
       venue,
-      address: [venue, (city || "").trim()].filter(Boolean).join(", "),
+      address: aliasAddr || [venue, (city || "").trim()].filter(Boolean).join(", "),
     });
   });
 
