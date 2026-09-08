@@ -587,9 +587,9 @@ app.get("/", (req, res) => {
           </header>
 
           <section class="hero">
-            <div class="eyebrow">Live Musik &amp; Clubs · Rhein-Main</div>
+            <div class="eyebrow">Live Music &amp; Clubs · Rhein-Main</div>
             <h1>Was läuft in Frankfurt.</h1>
-            <div class="sub"><b>${eventCount}</b> Termine — <b>${venueCount}</b> Locations</div>
+            <div class="sub"><b>${eventCount}</b> Events — <b>${venueCount}</b> Locations</div>
           </section>
 
           <div class="layout">
@@ -600,7 +600,7 @@ app.get("/", (req, res) => {
               <div class="venue-filter">
                 <div class="vf-label">Locations</div>
                 <div class="vf-list" id="venue-filter">
-                  <button type="button" class="vf-chip active" data-venue="">Alle</button>
+                  <button type="button" class="vf-chip active" data-venue="">All</button>
                   ${venues
                     .map(
                       (v) =>
@@ -611,8 +611,8 @@ app.get("/", (req, res) => {
               </div>
 
               <div class="search-box">
-                <div class="vf-label">Suche</div>
-                <input type="search" id="search" class="search-input" placeholder="Act, Titel, Genre …" autocomplete="off" spellcheck="false">
+                <div class="vf-label">Search</div>
+                <input type="search" id="search" class="search-input" placeholder="Act, Title, Genre …" autocomplete="off" spellcheck="false">
               </div>
             </div>
 
@@ -656,8 +656,8 @@ app.get("/", (req, res) => {
                     ${
                       ev.doors || ev.start
                         ? `<div class="tile-time">${[
-                            ev.doors ? `Einlass ${esc(ev.doors)}` : "",
-                            ev.start ? `Beginn ${esc(ev.start)}` : "",
+                            ev.doors ? `Doors ${esc(ev.doors)}` : "",
+                            ev.start ? `Start ${esc(ev.start)}` : "",
                           ]
                             .filter(Boolean)
                             .join(" · ")}</div>`
@@ -669,12 +669,12 @@ app.get("/", (req, res) => {
                   )
                   .join("")}
               </div>
-              <div id="empty" class="empty" hidden>Keine Termine an diesem Tag</div>
+              <div id="empty" class="empty" hidden>No events on this day</div>
             </div>
           </div>
 
           <footer class="site-footer">
-            <div class="foot-label">Quellen</div>
+            <div class="foot-label">Sources</div>
             <nav class="sources">
               ${sources
                 .map(
@@ -741,8 +741,8 @@ app.get("/", (req, res) => {
           }
           var counts = tileCounts();
 
-          var MONTHS = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
-          var WD = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+          var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+          var WD = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
           function pad(n) { return (n < 10 ? '0' : '') + n; }
           function iso(y, m, d) { return y + '-' + pad(m + 1) + '-' + pad(d); }
@@ -781,8 +781,8 @@ app.get("/", (req, res) => {
               h += '<button type="button" class="' + cls + '" data-date="' + ci + '"' + (n ? '' : ' disabled') + '>' + d + (n ? '<span class="cal-dot"></span>' : '') + '</button>';
             }
             h += '</div><div class="cal-actions">';
-            h += '<button type="button" id="cal-today" class="' + (selected === todayIso ? 'active' : '') + '">Heute</button>';
-            h += '<button type="button" id="cal-all" class="' + (selected ? '' : 'active') + '">Alle Termine</button>';
+            h += '<button type="button" id="cal-today" class="' + (selected === todayIso ? 'active' : '') + '">Today</button>';
+            h += '<button type="button" id="cal-all" class="' + (selected ? '' : 'active') + '">All events</button>';
             h += '</div>';
             calEl.innerHTML = h;
           }
@@ -795,13 +795,13 @@ app.get("/", (req, res) => {
               t.style.display = show ? '' : 'none';
               if (show) total++;
             });
-            var scope = selected ? human(selected) : 'Alle Termine';
+            var scope = selected ? human(selected) : 'All events';
             if (selectedVenue) scope += ' · ' + selectedVenue;
             if (query) scope += ' · "' + searchEl.value.trim() + '"';
-            hintEl.textContent = scope + ' – ' + total + (total === 1 ? ' Termin' : ' Termine');
+            hintEl.textContent = scope + ' – ' + total + (total === 1 ? ' event' : ' events');
             if (emptyEl) {
               emptyEl.hidden = total !== 0;
-              emptyEl.textContent = query ? 'Nichts gefunden' : 'Keine Termine an diesem Tag';
+              emptyEl.textContent = query ? 'Nichts gefunden' : 'No events on this day';
             }
             if (resultsEl) resultsEl.style.display = total === 0 ? 'none' : '';
           }
