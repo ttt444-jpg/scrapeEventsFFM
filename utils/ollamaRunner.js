@@ -1,4 +1,4 @@
-import ollama from "ollama";
+import { Ollama } from "ollama";
 import sharp from "sharp";
 
 const VISION_MODEL = process.env.OLLAMA_VISION_MODEL || "qwen2.5vl:3b";
@@ -33,47 +33,60 @@ export async function ocrFlyer(imageBuffer) {
     ? (await shrink(imageBuffer)).toString("base64")
     : imageBuffer;
 
-  // stream: true -> Antwort-Header kommen sofort; sonst killt undici die
-  // Verbindung nach 300s (headersTimeout), wenn die Generierung laenger braucht.
-  const stream = await ollama.chat({
-    model: VISION_MODEL,
-    stream: true,
-    messages: [
-      {
-        role: "user",
-        content:
-          "Transkribiere den kompletten sichtbaren Text auf diesem Veranstaltungsflyer " +
-          "wortwörtlich, Zeile für Zeile (inklusive Datum, Wochentag, Acts sowie allen " +
-          "Uhrzeiten – besonders Einlass und Beginn). " +
-          "Gib ausschließlich den Text zurück, keine Beschreibung. Kein Text im Bild: KEIN_TEXT",
-        images: [imageBase64],
-      },
-    ],
-  });
+  // Eine harte Deadline fuer den GESAMTEN Aufruf. ollama.abort() reicht nicht:
+  // solange chat() noch auf die Antwort-Header wartet (Modell-Load + Bild-
+  // Prefill dauern auf diesem Server zig Minuten), ist der Request intern noch
+  // gar nicht als "laufend" registriert. Wir geben dem Client daher ein eigenes
+  // fetch mit AbortSignal, das sowohl den Header-Wait als auch das Stream-Lesen
+  // abbricht.
+  const deadline = new AbortController();
+  const timer = setTimeout(() => {
+    deadline.abort(new Error(`Vision-OCR nach ${OCR_TIMEOUT_MS} ms abgebrochen`));
+  }, OCR_TIMEOUT_MS);
 
-  let text = "";
-  const consume = (async () => {
-    for await (const part of stream) {
-      text += part?.message?.content || "";
-    }
-  })();
-
-  let timer;
-  const timeout = new Promise((_, reject) => {
-    timer = setTimeout(() => {
-      ollama.abort(); // bricht den laufenden Stream ab; Aufrufe sind sequenziell
-      reject(new Error(`Vision-OCR nach ${OCR_TIMEOUT_MS} ms abgebrochen`));
-    }, OCR_TIMEOUT_MS);
+  const client = new Ollama({
+    fetch: (url, init = {}) => {
+      const signal = init.signal
+        ? AbortSignal.any([init.signal, deadline.signal])
+        : deadline.signal;
+      return fetch(url, { ...init, signal });
+    },
   });
 
   try {
-    await Promise.race([consume, timeout]);
+    // stream: true -> Header kommen frueh; sonst killt undici die Verbindung
+    // nach 300s (headersTimeout), wenn die Generierung laenger braucht.
+    const stream = await client.chat({
+      model: VISION_MODEL,
+      stream: true,
+      messages: [
+        {
+          role: "user",
+          content:
+            "Transkribiere den kompletten sichtbaren Text auf diesem Veranstaltungsflyer " +
+            "wortwörtlich, Zeile für Zeile (inklusive Datum, Wochentag, Acts sowie allen " +
+            "Uhrzeiten – besonders Einlass und Beginn). " +
+            "Gib ausschließlich den Text zurück, keine Beschreibung. Kein Text im Bild: KEIN_TEXT",
+          images: [imageBase64],
+        },
+      ],
+    });
+
+    let text = "";
+    for await (const part of stream) {
+      text += part?.message?.content || "";
+    }
+    text = text.trim();
+
+    return /^KEIN_TEXT\b/i.test(text) ? "" : text;
+  } catch (err) {
+    if (deadline.signal.aborted) {
+      throw deadline.signal.reason instanceof Error
+        ? deadline.signal.reason
+        : new Error(`Vision-OCR nach ${OCR_TIMEOUT_MS} ms abgebrochen`);
+    }
+    throw err;
   } finally {
     clearTimeout(timer);
-    consume.catch(() => {}); // AbortError nach Timeout verschlucken
   }
-
-  text = text.trim();
-
-  return /^KEIN_TEXT\b/i.test(text) ? "" : text;
 }
