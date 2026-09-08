@@ -2,6 +2,13 @@ import ollama from "ollama";
 import sharp from "sharp";
 
 const VISION_MODEL = process.env.OLLAMA_VISION_MODEL || "qwen2.5vl:3b";
+// Ohne Timeout kann ein einzelner Flyer auf dem RAM-schwachen Server 30-50 min
+// dauern und den Scrape ins systemd-Timeout laufen lassen. Nach OCR_TIMEOUT_MS
+// brechen wir den Aufruf ab; der Aufrufer (instagramEvents.js) schaltet Vision-
+// OCR danach fuer den Rest des Laufs ab und faellt auf den Alt-Text zurueck.
+const OCR_TIMEOUT_MS = Number(process.env.OLLAMA_OCR_TIMEOUT_MS || 90_000);
+// Not-Aus: Vision-OCR auf diesem Host komplett ueberspringen.
+const SKIP_VISION_OCR = /^(1|true|yes)$/i.test(process.env.SKIP_VISION_OCR || "");
 
 // Verkleinert das Flyer-Bild vor der OCR: weniger Vision-Tokens -> deutlich
 // schnellere Inferenz auf schwacher Hardware, ohne dass Text unlesbar wird.
@@ -20,6 +27,8 @@ async function shrink(imageBuffer) {
 // Liest den kompletten Text eines Veranstaltungsflyers per Vision-Modell aus.
 // Erwartet einen Buffer oder einen bereits base64-kodierten String.
 export async function ocrFlyer(imageBuffer) {
+  if (SKIP_VISION_OCR) return "";
+
   const imageBase64 = Buffer.isBuffer(imageBuffer)
     ? (await shrink(imageBuffer)).toString("base64")
     : imageBuffer;
@@ -43,9 +52,27 @@ export async function ocrFlyer(imageBuffer) {
   });
 
   let text = "";
-  for await (const part of stream) {
-    text += part?.message?.content || "";
+  const consume = (async () => {
+    for await (const part of stream) {
+      text += part?.message?.content || "";
+    }
+  })();
+
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => {
+      ollama.abort(); // bricht den laufenden Stream ab; Aufrufe sind sequenziell
+      reject(new Error(`Vision-OCR nach ${OCR_TIMEOUT_MS} ms abgebrochen`));
+    }, OCR_TIMEOUT_MS);
+  });
+
+  try {
+    await Promise.race([consume, timeout]);
+  } finally {
+    clearTimeout(timer);
+    consume.catch(() => {}); // AbortError nach Timeout verschlucken
   }
+
   text = text.trim();
 
   return /^KEIN_TEXT\b/i.test(text) ? "" : text;
