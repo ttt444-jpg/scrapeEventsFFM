@@ -55,7 +55,7 @@ export function parseTimes(text) {
   if (!out.start) {
     const solo =
       t.match(/\b(\d{1,2})[:.](\d{2})\s*uhr\b/i) ||
-      t.match(/\bum\s+(\d{1,2})(?:[:.](\d{2}))?\s*uhr\b/i);
+      t.match(/\b(?:um|ab)\s+(\d{1,2})(?:[:.](\d{2}))?\s*uhr\b/i);
     const val = solo ? norm(solo[1], solo[2]) : "";
     if (val && val !== out.doors) out.start = val;
   }
