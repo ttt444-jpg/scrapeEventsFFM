@@ -1,8 +1,8 @@
 # scrapeEventsFFM
 
 Scrapt Veranstaltungen (v.a. Konzerte) von Clubs und Locations in
-Frankfurt / Offenbach / Wiesbaden und zeigt sie gebündelt auf einer Seite
-unter [http://localhost:3000](http://localhost:3000).
+Frankfurt / Offenbach / Wiesbaden und zeigt sie gebündelt als **069 Events**
+auf einer Seite unter [http://localhost:3000](http://localhost:3000).
 
 Zusätzlich werden Shows des Veranstalters **ichi ichi** übernommen – aber nur,
 wenn sie nicht ohnehin schon über einen Venue-Scraper erfasst sind (Details
@@ -36,6 +36,11 @@ Optional, nur für die Instagram-Locations (Yachtclub, HFG Kapelle):
   Modell wählbar über `OLLAMA_VISION_MODEL` (Standard `qwen2.5vl:3b`). Läuft
   Ollama nicht, wird nur der von Instagram mitgelieferte Alt-Text ausgewertet –
   die Scraper brechen nicht ab.
+  - `OLLAMA_OCR_TIMEOUT_MS` (Standard `90000`) – bricht einen einzelnen
+    Flyer-OCR-Aufruf ab, statt den täglichen Scrape auf schwacher Hardware
+    ins systemd-Timeout laufen zu lassen; fällt danach für den Rest des
+    Laufs auf den Alt-Text zurück.
+  - `SKIP_VISION_OCR=1` – Vision-OCR komplett überspringen (Not-Aus).
 
 ## Nutzung
 
