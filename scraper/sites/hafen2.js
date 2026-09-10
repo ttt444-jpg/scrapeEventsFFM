@@ -1,6 +1,8 @@
 import { loadPage } from "../scraperBase.js";
 import { parseTimes } from "../../utils/parseTimes.js";
 
+const DEFAULT_IMAGE = "https://hafen2.net/templates/images/hafen2-logo.gif";
+
 export async function scrapeHafen2() {
   const url = "https://www.hafen2.net/1-0-Programm.html?show=page&type=art_kat_1";
   const $ = await loadPage(url);
@@ -39,7 +41,7 @@ export async function scrapeHafen2() {
     );
     const image = imgMatch
       ? new URL("index.php?tinymceimg=" + imgMatch[1], url).href
-      : null;
+      : DEFAULT_IMAGE;
 
     // "29.08., 19:00 Uhr, 10 Euro" – eine Uhrzeit, als Start gewertet
     const { doors, start } = parseTimes(locationText);
