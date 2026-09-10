@@ -11,7 +11,15 @@ const MONTHS_DE = {
 // numerisches Datum ("8.8.2026") hat daher Vorrang; bei ausgeschriebenen
 // Monatsnamen gewinnt der Kandidat mit Jahresangabe, sonst der erste mit
 // einem gültigen Monatsnamen (verwirft so Zahlen wie "18. Geburtstag").
-function extractDate(title) {
+//
+// Fehlt im Titel jede Jahresangabe, wird defaultYear (das Jahr der
+// gescrapten Archiv-Seite, z.B. .../2026/) angenommen - nicht die generische
+// "liegt das >1 Monat zurück?"-Heuristik aus formatEventDate. Die Titel
+// beziehen sich immer auf ein Event im Archivjahr; ohne diesen Fallback
+// landet ein Titel ohne Jahr, dessen Datum inzwischen vergangen ist,
+// fälschlich im Folgejahr (formatEventDate wählt dann das nächste Jahr, in
+// dem das Datum noch in der Zukunft liegt).
+function extractDate(title, defaultYear) {
   const numeric = title.match(/\b(\d{1,2}\.\d{1,2}(?:\.\d{2,4})?)\b/);
   if (numeric) return numeric[1];
 
@@ -21,7 +29,7 @@ function extractDate(title) {
 
   if (!candidates.length) return "";
   const chosen = candidates.find((c) => c.year) || candidates[0];
-  return `${chosen.day}. ${chosen.month}${chosen.year ? " " + chosen.year : ""}`;
+  return `${chosen.day}. ${chosen.month} ${chosen.year || defaultYear}`;
 }
 
 export async function scrapeKlapperfeld() {
@@ -40,7 +48,7 @@ export async function scrapeKlapperfeld() {
     const title = linkEl.attr("title")?.trim() || linkEl.text().trim();
 
     // Datum + Uhrzeit aus Titel extrahieren
-    const date = extractDate(title);
+    const date = extractDate(title, year);
     const { start } = parseTimes(title);
 
     // Bild-URL extrahieren
