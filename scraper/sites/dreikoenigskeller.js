@@ -37,7 +37,11 @@ export async function scrapeDreikoenigskeller() {
 
     const { doors, start } = parseTimes(detailPage("article").text());
 
-    if (!title.toUpperCase().includes("HOFKNEIPE") && !title.toUpperCase().includes("HOFFEST"))
+    if (
+      !title.toUpperCase().includes("HOFKNEIPE") &&
+      !title.toUpperCase().includes("HOFFEST") &&
+      !title.toUpperCase().includes("GESCHLOSSENE GESELLSCHAFT")
+    )
     {
     events.push({
       date,
