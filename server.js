@@ -122,7 +122,7 @@ app.get("/", (req, res) => {
       <body>
         <div class="wrap">
           <header class="site-header">
-            <span class="wordmark">069 Events <i>/ Frankfurt</i></span>
+            <button type="button" class="wordmark" id="brand">069 Events <i>/ Frankfurt</i></button>
             <button type="button" class="theme-toggle" id="theme-toggle">Dark</button>
           </header>
 
@@ -394,6 +394,14 @@ app.get("/", (req, res) => {
 
           render();
           apply();
+        })();
+
+        (function () {
+          var brand = document.getElementById('brand');
+          if (!brand) return;
+          brand.addEventListener('click', function () {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          });
         })();
 
         (function () {

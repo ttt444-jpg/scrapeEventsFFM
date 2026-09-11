@@ -93,6 +93,13 @@ a { color: inherit; text-decoration: none; }
   text-transform: uppercase;
   letter-spacing: 0.16em;
   white-space: nowrap;
+  border: 0;
+  background: none;
+  color: inherit;
+  padding: 20px 16px;
+  margin: -20px -16px;
+  border-radius: 999px;
+  cursor: pointer;
 }
 .wordmark i { font-style: normal; color: var(--fg-dim); }
 
