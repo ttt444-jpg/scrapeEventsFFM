@@ -122,7 +122,7 @@ app.get("/", (req, res) => {
       <body>
         <div class="wrap">
           <header class="site-header">
-            <button type="button" class="wordmark" id="brand">069 Events <i>/ Frankfurt</i></button>
+            <button type="button" class="wordmark" id="brand">069 Events <i><span class="wm-sep" aria-hidden="true"><span class="wm-slash">/</span><span class="wm-arrow">↑</span></span> Frankfurt</i></button>
             <button type="button" class="theme-toggle" id="theme-toggle">Dark</button>
           </header>
 
@@ -402,6 +402,11 @@ app.get("/", (req, res) => {
           brand.addEventListener('click', function () {
             window.scrollTo({ top: 0, behavior: 'smooth' });
           });
+          function onScroll() {
+            brand.classList.toggle('scrolled', window.scrollY > 24);
+          }
+          window.addEventListener('scroll', onScroll, { passive: true });
+          onScroll();
         })();
 
         (function () {
