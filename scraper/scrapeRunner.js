@@ -52,6 +52,14 @@ export async function runScraper() {
 
   const today = todayISO();
 
+  // In ein lokales Array sammeln statt direkt in `results` zu schreiben:
+  // `results` wird parallel vom Server gelesen (server.js -> refreshResults
+  // laedt bei geaenderter results.json per loadResultsCache neu in dasselbe
+  // Array). Wuerden wir hier schon waehrend des Scrapens in `results`
+  // pushen, koennte so ein Reload mittendrin dazwischenfunken und Eintraege
+  // doppelt hinterlassen. Erst am Ende wird `results` in einem Rutsch ersetzt.
+  const collected = [];
+
   for (const scraper of scrapers) {
     try {
       const siteData = await scraper();
@@ -68,10 +76,10 @@ export async function runScraper() {
           return !iso || iso >= today;
         });
       }
-      results.push(siteData);
+      collected.push(siteData);
     } catch (err) {
       console.error(`Fehler beim Scrapen mit ${scraper.name}:`, err.message);
-      results.push({ site: scraper.name, error: err.message });
+      collected.push({ site: scraper.name, error: err.message });
       continue;
     }
   }
@@ -79,13 +87,17 @@ export async function runScraper() {
   // Veranstalter ichi ichi: Shows an wechselnden Orten, aber nur wenn sie
   // nicht schon über einen Venue-Scraper erfasst sind.
   try {
-    await mergeIchiIchiShows(results, today);
+    await mergeIchiIchiShows(collected, today);
   } catch (err) {
     console.error("ichi ichi merge fehlgeschlagen:", err.message);
   }
 
   // ⭐ Alphabetisch sortieren
-  results.sort((a, b) => (a.site || "").localeCompare(b.site || ""));
+  collected.sort((a, b) => (a.site || "").localeCompare(b.site || ""));
+
+  // Erst jetzt, synchron und ohne await dazwischen, `results` ersetzen.
+  results.length = 0;
+  results.push(...collected);
 
   // Für Starts ohne Scraping (--no-scrape) zwischenspeichern
   saveResultsCache(results);
